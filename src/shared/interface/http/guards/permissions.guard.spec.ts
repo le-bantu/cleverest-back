@@ -20,10 +20,10 @@ describe('PermissionsGuard', () => {
   });
 
   it('allows when the user holds every required permission', () => {
-    const { guard, ctx } = build(
-      { permissions: ['manage-users', 'view-statistics'] },
-      ['manage-users', 'view-statistics'],
-    );
+    const { guard, ctx } = build({ permissions: ['manage-users', 'view-statistics'] }, [
+      'manage-users',
+      'view-statistics',
+    ]);
     expect(guard.canActivate(ctx)).toBe(true);
   });
 

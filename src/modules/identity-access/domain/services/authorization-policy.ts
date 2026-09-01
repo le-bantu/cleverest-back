@@ -14,11 +14,7 @@ export class AuthorizationPolicy {
     return this.effectivePermissions(user, rolePermissions).has(permission);
   }
 
-  hasAllPermissions(
-    user: User,
-    permissions: string[],
-    rolePermissions: Iterable<string>,
-  ): boolean {
+  hasAllPermissions(user: User, permissions: string[], rolePermissions: Iterable<string>): boolean {
     const held = this.effectivePermissions(user, rolePermissions);
     return permissions.every((p) => held.has(p));
   }

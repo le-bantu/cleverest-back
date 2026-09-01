@@ -38,4 +38,27 @@ describe('RefreshToken', () => {
     expect(token.revokedAt).toBe(first);
     expect(token.isActive(clock)).toBe(false);
   });
+
+  it('exposes its metadata via getters', () => {
+    const clock = at('2026-01-01T00:00:00.000Z');
+    const token = issue(clock);
+    expect(token.userId).toBe('user-1');
+    expect(token.tokenHash).toBe('sha:abc');
+    expect(token.userAgent).toBe('jest');
+    expect(token.createdAt.toISOString()).toBe('2026-01-01T00:00:00.000Z');
+    expect(token.expiresAt.getTime()).toBeGreaterThan(clock.now().getTime());
+  });
+
+  it('reconstitute rebuilds an equivalent token', () => {
+    const clock = at('2026-01-01T00:00:00.000Z');
+    const rebuilt = RefreshToken.reconstitute('rt-9', {
+      userId: 'u',
+      tokenHash: 'h',
+      expiresAt: new Date('2026-02-01T00:00:00.000Z'),
+      revokedAt: null,
+      userAgent: null,
+      createdAt: clock.now(),
+    });
+    expect(rebuilt.isActive(clock)).toBe(true);
+  });
 });

@@ -42,10 +42,7 @@ describe('User.register', () => {
 describe('User.createByAdmin', () => {
   it('requires at least one role', () => {
     expect(() =>
-      User.createByAdmin(
-        { id: 'x', email: null, passwordHash: 'h', roles: [] },
-        clock,
-      ),
+      User.createByAdmin({ id: 'x', email: null, passwordHash: 'h', roles: [] }, clock),
     ).toThrow(ConflictException);
   });
 
@@ -107,6 +104,66 @@ describe('User invariants', () => {
     expect(u.phone).toBe('+33102030405');
     u.setPhone('   ');
     expect(u.phone).toBeNull();
+  });
+});
+
+describe('User getters & misc behaviour', () => {
+  it('exposes timestamps, hash, verified state and admin-likeness', () => {
+    const u = register();
+    expect(u.passwordHash).toBe('argon:pw');
+    expect(u.createdAt).toBeInstanceOf(Date);
+    expect(u.updatedAt).toBeInstanceOf(Date);
+    expect(u.emailVerifiedAt).toBeNull();
+    expect(u.isAdminLike).toBe(false);
+  });
+
+  it('createByAdmin supports a null email and marks admin-likeness', () => {
+    const u = User.createByAdmin(
+      {
+        id: '44444444-4444-4444-8444-444444444444',
+        email: null,
+        passwordHash: 'h',
+        roles: [RoleName.ADMIN],
+      },
+      clock,
+    );
+    expect(u.emailValue).toBeNull();
+    expect(u.isAdminLike).toBe(true);
+    u.pullDomainEvents();
+  });
+
+  it('setDirectPermissions replaces the direct grants', () => {
+    const u = register();
+    u.setDirectPermissions([PermissionName.MANAGE_USERS, PermissionName.VIEW_STATISTICS]);
+    expect(u.directPermissions.sort()).toEqual(['manage-users', 'view-statistics']);
+  });
+
+  it('reconstitute rebuilds the aggregate without emitting events', () => {
+    const original = register();
+    const rebuilt = User.reconstitute(original.id, {
+      email: original.email,
+      phone: original.phone,
+      passwordHash: original.passwordHash,
+      isActive: original.isActive,
+      twoFactorEnabled: original.twoFactorEnabled,
+      emailVerifiedAt: original.emailVerifiedAt,
+      roles: new Set(original.roles),
+      directPermissions: new Set(original.directPermissions),
+      deletedAt: original.deletedAt,
+      createdAt: original.createdAt,
+      updatedAt: original.updatedAt,
+      profile: original.profile,
+    });
+    expect(rebuilt.pullDomainEvents()).toHaveLength(0);
+    expect(rebuilt.equals(original)).toBe(true);
+  });
+
+  it('softDelete is idempotent', () => {
+    const u = register();
+    u.softDelete(clock);
+    const first = u.deletedAt;
+    u.softDelete(clock);
+    expect(u.deletedAt).toBe(first);
   });
 });
 

@@ -23,7 +23,11 @@ describe('Result', () => {
   });
 
   it('map transforms Ok and passes Err through', () => {
-    expect(ok(2).map((n) => n * 3).unwrap()).toBe(6);
+    expect(
+      ok(2)
+        .map((n) => n * 3)
+        .unwrap(),
+    ).toBe(6);
     const e = err<Error, number>(new Error('x')).map((n) => n * 3);
     expect(isErr(e)).toBe(true);
   });
@@ -31,6 +35,10 @@ describe('Result', () => {
   it('mapErr transforms Err and passes Ok through', () => {
     const mapped = (err(new Error('a')) as Err<never, Error>).mapErr((e) => e.message);
     expect(mapped.unwrapErr()).toBe('a');
-    expect(ok(1).mapErr(() => 'y').unwrap()).toBe(1);
+    expect(
+      ok(1)
+        .mapErr(() => 'y')
+        .unwrap(),
+    ).toBe(1);
   });
 });

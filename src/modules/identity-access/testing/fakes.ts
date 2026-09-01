@@ -48,12 +48,39 @@ export class FakeTokenIssuer extends TokenIssuer {
   }
 }
 
+export class FakeOtpSender {
+  readonly sent: Array<{ email: string; code: string; purpose: string }> = [];
+  send(message: {
+    email: string;
+    code: string;
+    purpose: string;
+    ttlSeconds: number;
+  }): Promise<void> {
+    this.sent.push({ email: message.email, code: message.code, purpose: message.purpose });
+    return Promise.resolve();
+  }
+}
+
+export const fakeEventBus = () => ({
+  published: [] as unknown[],
+  publish(events: unknown[]) {
+    this.published.push(...events);
+    return Promise.resolve();
+  },
+  subscribe() {
+    /* noop */
+  },
+});
+
 export class FakeRoleCatalog extends RoleCatalogPort {
   constructor(private readonly map: Record<string, string[]> = {}) {
     super();
   }
   roleExists(name: string): Promise<boolean> {
-    return Promise.resolve(name in this.map || ['client', 'consultant', 'apporteur', 'admin', 'superadmin'].includes(name));
+    return Promise.resolve(
+      name in this.map ||
+        ['client', 'consultant', 'apporteur', 'admin', 'superadmin'].includes(name),
+    );
   }
   permissionsForRoles(roleNames: string[]): Promise<string[]> {
     const out = new Set<string>();

@@ -40,9 +40,9 @@ describe('AuthorizationPolicy', () => {
 
   it('hasAllPermissions requires every listed permission', () => {
     const u = admin();
-    expect(policy.hasAllPermissions(u, ['manage-users', 'view-statistics'], ['view-statistics'])).toBe(
-      true,
-    );
+    expect(
+      policy.hasAllPermissions(u, ['manage-users', 'view-statistics'], ['view-statistics']),
+    ).toBe(true);
     expect(policy.hasAllPermissions(u, ['manage-users', 'pay-apporteurs'], [])).toBe(false);
   });
 

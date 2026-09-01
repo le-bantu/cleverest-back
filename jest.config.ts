@@ -46,9 +46,11 @@ const config: Config = {
     '!**/index.ts',
   ],
   coverageDirectory: '<rootDir>/coverage',
+  // Aggregate thresholds per layer (DoD: domain + use cases >= 90% lines on the module).
   coverageThreshold: {
-    'src/modules/**/domain/**/*.ts': { lines: 90, statements: 85 },
-    'src/modules/**/application/**/*.ts': { lines: 90, statements: 85 },
+    'src/modules/identity-access/domain/': { lines: 90, statements: 88 },
+    'src/modules/identity-access/application/': { lines: 90, statements: 88 },
+    'src/shared/kernel/': { lines: 90, statements: 90 },
   },
 };
 

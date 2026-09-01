@@ -56,6 +56,8 @@ describe('AllExceptionsFilter', () => {
   it('keeps HttpException validation message arrays', () => {
     const { host, json } = hostFor();
     filter.catch(new HttpException({ message: ['a', 'b'], error: 'Bad Request' }, 400), host);
-    expect(json).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400, message: 'a, b' }));
+    expect(json).toHaveBeenCalledWith(
+      expect.objectContaining({ statusCode: 400, message: 'a, b' }),
+    );
   });
 });
