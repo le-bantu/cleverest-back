@@ -1,0 +1,229 @@
+// Cleverest — single schema, single database.
+// Bounded-context isolation is applicative (folders + no cross-module repo imports),
+// not physical. LOT 1 introduces the identity-access + shared tables only.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// identity-access
+// ---------------------------------------------------------------------------
+
+model User {
+  id               String    @id @default(uuid()) @db.Uuid
+  email            String?   @unique
+  phone            String?
+  passwordHash     String
+  isActive         Boolean   @default(true)
+  twoFactorEnabled Boolean   @default(false)
+  emailVerifiedAt  DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+
+  clientProfile     ClientProfile?
+  consultantProfile ConsultantProfile?
+  adminProfile      AdminProfile?
+  apporteurProfile  ApporteurProfile?
+
+  roles         UserRole[]
+  permissions   UserPermission[]
+  otpChallenges OtpChallenge[]
+  refreshTokens RefreshToken[]
+  notifications Notification[]
+
+  @@index([isActive])
+  @@map("users")
+}
+
+model ClientProfile {
+  userId              String    @id @db.Uuid
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                String?
+  companySize         String?
+  taxId               String?
+  activityType        String?
+  averageRevenue      Decimal?  @db.Decimal(14, 2)
+  companyCreationDate DateTime?
+  rib                 String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@map("client_profiles")
+}
+
+model ConsultantProfile {
+  userId                String   @id @db.Uuid
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName             String?
+  lastName              String?
+  phone                 String?
+  email                 String?
+  isCompany             Boolean  @default(false)
+  taxId                 String?
+  expertiseDomains      String[] @default([])
+  experience            String?
+  billingEntity         String?
+  hasAcceptedConditions Boolean  @default(false)
+  consultingContractUrl String?
+  rib                   String?
+  validated             Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([validated])
+  @@map("consultant_profiles")
+}
+
+model AdminProfile {
+  userId    String   @id @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  position  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admin_profiles")
+}
+
+model ApporteurProfile {
+  userId    String   @id @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  structure String?
+  documents String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("apporteur_profiles")
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  roles RolePermission[]
+  users UserPermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  userId String @db.Uuid
+  roleId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserPermission {
+  userId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, permissionId])
+  @@map("user_permissions")
+}
+
+enum OtpChannel {
+  EMAIL
+}
+
+enum OtpPurpose {
+  LOGIN
+}
+
+model OtpChallenge {
+  id         String     @id @default(uuid()) @db.Uuid
+  userId     String     @db.Uuid
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash   String
+  channel    OtpChannel @default(EMAIL)
+  purpose    OtpPurpose @default(LOGIN)
+  expiresAt  DateTime
+  attempts   Int        @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime   @default(now())
+
+  @@index([userId, purpose, consumedAt])
+  @@map("otp_challenges")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, revokedAt])
+  @@map("refresh_tokens")
+}
+
+// ---------------------------------------------------------------------------
+// shared
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  entity     String
+  entityId   String
+  action     String
+  fromStatus String?
+  toStatus   String?
+  actorId    String?  @db.Uuid
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
