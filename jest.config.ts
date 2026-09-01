@@ -12,7 +12,7 @@ const tsPreset = {
   rootDir: '.',
   moduleNameMapper,
   transform: {
-    '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json', isolatedModules: true }],
+    '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json' }],
   },
 };
 

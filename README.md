@@ -1,98 +1,80 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Cleverest backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS · Clean Architecture · DDD. Rewrite of the legacy Laravel API
+(`old-back/`), following `docs/refonte-backend/`.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Layers & dependency rule
 
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ npm install
+```
+Domain  ←  Application  ←  { Infrastructure, Interface }
 ```
 
-## Compile and run the project
+- **`src/shared/kernel`** — framework-free DDD primitives (`Result`, `DomainException`,
+  `AbstractEntity/AggregateRoot/ValueObject`, `Uuid`, `Page`, `Clock`).
+- **`src/shared/application/ports`** — cross-cutting ports (`FileStoragePort`, `NotifierPort`,
+  `OtpSenderPort`, `PdfGeneratorPort`, `AuditLogPort`, `EventBusPort`, `UnitOfWorkPort`).
+- **`src/shared/infrastructure`** — Prisma, storage (local/S3), notifier (db + mail),
+  OTP sender, audit log, in-memory event bus, pino logger, zod env validation.
+- **`src/shared/interface/http`** — `JwtAuthGuard` (global, `@Public()` to opt out),
+  `RolesGuard` (`@Roles`), `PermissionsGuard` (`@RequirePermissions`), `AllExceptionsFilter`
+  (`DomainException` → `{ statusCode, error, message, details?, path, timestamp }`).
+- **`src/modules/<context>`** — one folder per bounded context, each with
+  `domain / application / infrastructure / interface`. The domain never imports
+  NestJS, Prisma or class-validator. Use cases receive ports by constructor; ownership
+  and business authorization are enforced **inside the use case**.
+
+Implemented so far (LOT 1): `identity-access` (+ a `reporting` RBAC placeholder).
+
+## Prerequisites
+
+- Node 20+ and npm
+- Docker (for the Postgres containers)
+
+## Getting started
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+cp .env.example .env
+docker compose up -d postgres-dev postgres-test   # dev on :5442, test on :5433
+npm install
+npm run prisma:generate
+npm run prisma:migrate        # applies migrations to the dev DB
+npm run db:seed               # roles, permissions, a demo superadmin
+npm run start:dev             # http://localhost:3000/api  ·  docs at /api/docs
 ```
 
-## Run tests
+> The plan calls for the dev DB on `5432`; this workstation already runs a local
+> `postgresql@14` there, so `docker-compose.yml` publishes the dev container on
+> **`5442`**. The dedicated **test** DB stays on **`5433`** as specified.
 
-```bash
-# unit tests
-$ npm run test
+## Configuration
 
-# e2e tests
-$ npm run test:e2e
+`@nestjs/config` validates the environment at boot (zod, `src/shared/infrastructure/config/env.schema.ts`);
+a missing/invalid variable aborts startup. Keys: `DATABASE_URL`, `JWT_ACCESS_SECRET`,
+`JWT_ACCESS_TTL`, `JWT_REFRESH_SECRET`, `JWT_REFRESH_TTL`, `OTP_TTL_SECONDS`,
+`OTP_MAX_ATTEMPTS`, `OTP_RESEND_COOLDOWN_SECONDS`, `STORAGE_DRIVER`, `MAIL_DRIVER`, …
 
-# test coverage
-$ npm run test:cov
-```
+## Tests
 
-## Deployment
+| Command | Scope |
+|---|---|
+| `npm run test:unit` | domain + application + kernel + guards/filter (pure, no I/O) |
+| `npm run test:integration` | Prisma repositories & adapters against the `:5433` test DB (`--runInBand`) |
+| `npm run test:e2e` | full HTTP app against the test DB (`--runInBand`) |
+| `npm run test:cov` | unit coverage (domain + use cases ≥ 90% lines) |
+| `npm run lint` / `npm run build` | ESLint (flat config) / `nest build` |
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Integration & e2e require `docker compose up -d postgres-test`; a Jest `globalSetup`
+runs `prisma migrate deploy` against it before the suite.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Auth model
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- **JWT access token** (short-lived) + **opaque refresh token** (rotated on every use,
+  sha-256 hashed at rest). `POST /api/auth/refresh` revokes the presented token and
+  issues a new pair.
+- **OTP / 2FA** opt-in per user (`PATCH /api/me/2fa`). When enabled, `POST /api/auth/login`
+  returns `202 { otpRequired, challengeId }`; `POST /api/auth/otp/verify` completes it.
+- **RBAC + granular permissions**: `superadmin` is seeded with every permission, `admin`
+  with none — so `admin ≠ superadmin` (e.g. `GET /api/admin/dashboard/summary` requires
+  `view-statistics`).
+- Passwords: **argon2id**; legacy **bcrypt** hashes are verified transparently and
+  re-hashed to argon2 on the next successful login.
