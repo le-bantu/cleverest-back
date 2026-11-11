@@ -50,6 +50,8 @@ const config: Config = {
   coverageThreshold: {
     'src/modules/identity-access/domain/': { lines: 90, statements: 88 },
     'src/modules/identity-access/application/': { lines: 90, statements: 88 },
+    'src/modules/quotes/domain/': { lines: 90, statements: 90 },
+    'src/modules/quotes/application/': { lines: 90, statements: 90 },
     'src/shared/kernel/': { lines: 90, statements: 90 },
   },
 };
