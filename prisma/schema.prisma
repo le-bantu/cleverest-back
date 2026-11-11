@@ -38,6 +38,12 @@ model User {
   refreshTokens RefreshToken[]
   notifications Notification[]
 
+  quotesAsClient      Quote[]                   @relation("QuoteClient")
+  quotesQuoted        Quote[]                   @relation("QuoteQuotedBy")
+  quoteAssignments    QuoteConsultant[]
+  quoteDocuments      QuoteDocument[]
+  quoteDocumentGrants QuoteDocumentVisibility[]
+
   @@index([isActive])
   @@map("users")
 }
@@ -192,6 +198,127 @@ model RefreshToken {
 
   @@index([userId, revokedAt])
   @@map("refresh_tokens")
+}
+
+// ---------------------------------------------------------------------------
+// quotes
+// ---------------------------------------------------------------------------
+
+// DB values keep the legacy accents (CDC §7.5); the TS identifiers are ASCII.
+enum QuoteStatus {
+  EN_ATTENTE
+  TRAITEMENT_CONSULTANT
+  COTE                  @map("COTÉ")
+  VALIDE_ADMIN          @map("VALIDÉ_ADMIN")
+  SIGNE_CLIENT          @map("SIGNÉ_CLIENT")
+  REJETE                @map("REJETÉ")
+  A_REVOIR_CONSULTANT
+  A_REVOIR_CLIENT
+}
+
+enum QuoteType {
+  CONSULTATION
+  ABONNEMENT
+}
+
+enum QuoteActorRole {
+  CLIENT
+  CONSULTANT
+  ADMIN
+}
+
+enum DocumentVisibleTo {
+  ALL
+  ADMIN
+  CONSULTANT
+  CLIENT
+  SPECIFIC
+}
+
+model Quote {
+  id                     String      @id @default(uuid()) @db.Uuid
+  clientId               String      @db.Uuid
+  client                 User        @relation("QuoteClient", fields: [clientId], references: [id], onDelete: Restrict)
+  parentQuoteId          String?     @db.Uuid
+  parentQuote            Quote?      @relation("QuoteSubquotes", fields: [parentQuoteId], references: [id], onDelete: Cascade)
+  subquotes              Quote[]     @relation("QuoteSubquotes")
+  isSubquote             Boolean     @default(false)
+  requestNumber          String      @unique
+  type                   QuoteType
+  title                  String?
+  description            String
+  price                  Decimal?    @db.Decimal(14, 2)
+  currency               String      @default("EUR")
+  status                 QuoteStatus @default(EN_ATTENTE)
+  adminNotes             String?
+  adminNotesToConsultant String?
+  adminNotesToClient     String?
+  consultantNotes        String?
+  rejectedReason         String?
+  quotedById             String?     @db.Uuid
+  quotedBy               User?       @relation("QuoteQuotedBy", fields: [quotedById], references: [id], onDelete: SetNull)
+  submittedAt            DateTime?
+  validatedAt            DateTime?
+  adminDeadline          DateTime?
+  consultantDeadline     DateTime?
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  consultants QuoteConsultant[]
+  documents   QuoteDocument[]
+
+  @@index([clientId])
+  @@index([status])
+  @@index([parentQuoteId])
+  @@index([createdAt])
+  @@map("quotes")
+}
+
+/// Pivot devis ↔ consultant (users.id). At most one lead per quote (partial unique index in SQL).
+model QuoteConsultant {
+  quoteId      String   @db.Uuid
+  consultantId String   @db.Uuid
+  isLead       Boolean  @default(false)
+  assignedAt   DateTime @default(now())
+  quote        Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  consultant   User     @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+
+  @@id([quoteId, consultantId])
+  @@index([consultantId])
+  @@map("quote_consultants")
+}
+
+model QuoteDocument {
+  id             String            @id @default(uuid()) @db.Uuid
+  quoteId        String            @db.Uuid
+  quote          Quote             @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  uploadedById   String            @db.Uuid
+  uploadedBy     User              @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  uploadedByRole QuoteActorRole
+  label          String?
+  path           String
+  originalName   String
+  mimeType       String?
+  size           Int
+  comment        String?
+  visibleTo      DocumentVisibleTo
+  createdAt      DateTime          @default(now())
+
+  visibleUsers QuoteDocumentVisibility[]
+
+  @@index([quoteId])
+  @@map("quote_documents")
+}
+
+/// Users granted access to a document whose visibleTo = SPECIFIC.
+model QuoteDocumentVisibility {
+  documentId String        @db.Uuid
+  userId     String        @db.Uuid
+  document   QuoteDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([documentId, userId])
+  @@map("quote_document_visibilities")
 }
 
 // ---------------------------------------------------------------------------
