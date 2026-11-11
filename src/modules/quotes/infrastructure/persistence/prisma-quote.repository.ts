@@ -93,6 +93,10 @@ export class PrismaQuoteRepository extends QuoteRepository {
     await this.db(tx).quote.deleteMany({ where: { id } });
   }
 
+  async hasContract(quoteId: string): Promise<boolean> {
+    return (await this.prisma.contract.count({ where: { quoteId } })) > 0;
+  }
+
   async lastRequestSequence(tx?: unknown): Promise<number> {
     const rows = await this.db(tx).$queryRaw<Array<{ max: number | null }>>`
       SELECT MAX(CAST(SUBSTRING("requestNumber" FROM 5) AS INTEGER)) AS max
@@ -129,6 +133,9 @@ export class PrismaQuoteRepository extends QuoteRepository {
     if (f.type) where.type = f.type;
     if (f.isSubquote !== undefined) where.isSubquote = f.isSubquote;
     if (f.parentQuoteId) where.parentQuoteId = f.parentQuoteId;
+    if (f.hasContract !== undefined) {
+      where.contract = f.hasContract ? { isNot: null } : { is: null };
+    }
     if (f.isValidated !== undefined) {
       where.validatedAt = f.isValidated ? { not: null } : null;
     }

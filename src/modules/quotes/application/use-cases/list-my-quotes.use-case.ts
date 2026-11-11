@@ -26,6 +26,7 @@ export class ListMyQuotesUseCase implements UseCase<ListMyQuotesInput, Page<Clie
       type: input.type ? parseQuoteType(input.type) : undefined,
       dateMin: input.dateMin,
       dateMax: input.dateMax,
+      hasContract: input.hasContract,
     });
     return page.map(toClientQuoteView);
   }

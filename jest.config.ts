@@ -52,6 +52,8 @@ const config: Config = {
     'src/modules/identity-access/application/': { lines: 90, statements: 88 },
     'src/modules/quotes/domain/': { lines: 90, statements: 90 },
     'src/modules/quotes/application/': { lines: 90, statements: 90 },
+    'src/modules/contracts/domain/': { lines: 90, statements: 90 },
+    'src/modules/contracts/application/': { lines: 90, statements: 90 },
     'src/shared/kernel/': { lines: 90, statements: 90 },
   },
 };

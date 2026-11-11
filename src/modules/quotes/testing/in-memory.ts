@@ -1,22 +1,12 @@
-import {
-  DomainEvent,
-  FixedClock,
-  generateUuid,
-  normalizePageQuery,
-  Page,
-  PageQuery,
-} from '@shared/kernel';
-import { AuditLogPort, AuditRecord } from '@shared/application/ports/audit-log.port';
-import { EventBusPort, EventHandler } from '@shared/application/ports/event-bus.port';
-import {
-  FileStoragePort,
-  PutFileInput,
-  StoredFile,
-} from '@shared/application/ports/file-storage.port';
-import { NotificationEvent, NotifierPort } from '@shared/application/ports/notifier.port';
-import { UnitOfWorkPort } from '@shared/application/ports/unit-of-work.port';
+import { FixedClock, generateUuid, normalizePageQuery, Page, PageQuery } from '@shared/kernel';
 import { ActorContext } from '@shared/application/use-case';
-import { NotFoundException } from '@shared/kernel';
+import {
+  FakeAuditLog,
+  FakeEventBus,
+  FakeFileStorage,
+  FakeNotifier,
+  FakeUnitOfWork,
+} from '@shared/testing/fakes';
 import {
   ConsultantCandidate,
   ConsultantDirectoryPort,
@@ -33,6 +23,8 @@ import { NOW } from './builders';
 
 export class InMemoryQuoteRepository extends QuoteRepository {
   readonly store = new Map<string, Quote>();
+  /** quotes that have a contract (contracts context projection) */
+  readonly contractQuoteIds = new Set<string>();
   saves = 0;
 
   nextIdentity(): string {
@@ -59,6 +51,9 @@ export class InMemoryQuoteRepository extends QuoteRepository {
     for (const q of [...this.store.values()]) if (q.parentQuoteId === id) this.store.delete(q.id);
     return Promise.resolve();
   }
+  hasContract(quoteId: string): Promise<boolean> {
+    return Promise.resolve(this.contractQuoteIds.has(quoteId));
+  }
   lastRequestSequence(): Promise<number> {
     const seqs = [...this.store.values()].map((q) => q.requestNumber.sequence);
     return Promise.resolve(seqs.length ? Math.max(...seqs) : 0);
@@ -75,7 +70,8 @@ export class InMemoryQuoteRepository extends QuoteRepository {
         (f.parentQuoteId === undefined || q.parentQuoteId === f.parentQuoteId) &&
         (f.isValidated === undefined || (q.validatedAt !== null) === f.isValidated) &&
         (f.dateMin === undefined || q.createdAt >= f.dateMin) &&
-        (f.dateMax === undefined || q.createdAt <= f.dateMax),
+        (f.dateMax === undefined || q.createdAt <= f.dateMax) &&
+        (f.hasContract === undefined || this.contractQuoteIds.has(q.id) === f.hasContract),
     );
     const start = (page - 1) * perPage;
     return Promise.resolve(
@@ -111,66 +107,13 @@ export class InMemoryQuoteDocumentRepository extends QuoteDocumentRepository {
   }
 }
 
-export class FakeUnitOfWork extends UnitOfWorkPort {
-  runs = 0;
-  run<T>(work: (tx: unknown) => Promise<T>): Promise<T> {
-    this.runs++;
-    return work({ tx: true });
-  }
-}
-
-export class FakeAuditLog extends AuditLogPort {
-  readonly entries: AuditRecord[] = [];
-  record(entry: AuditRecord): Promise<void> {
-    this.entries.push(entry);
-    return Promise.resolve();
-  }
-}
-
-export class FakeEventBus extends EventBusPort {
-  readonly published: DomainEvent[] = [];
-  publish(events: DomainEvent[]): Promise<void> {
-    this.published.push(...events);
-    return Promise.resolve();
-  }
-  subscribe(_eventName: string, _handler: EventHandler): void {}
-}
-
-export class FakeNotifier extends NotifierPort {
-  readonly sent: Array<{ userId: string; event: NotificationEvent }> = [];
-  failFor = new Set<string>();
-  notify(userId: string, event: NotificationEvent): Promise<void> {
-    if (this.failFor.has(userId)) return Promise.reject(new Error('smtp down'));
-    this.sent.push({ userId, event });
-    return Promise.resolve();
-  }
-  recipients(): string[] {
-    return this.sent.map((s) => s.userId);
-  }
-}
-
-export class FakeFileStorage extends FileStoragePort {
-  readonly files = new Map<string, Buffer>();
-  put(input: PutFileInput): Promise<StoredFile> {
-    this.files.set(input.key, input.content);
-    return Promise.resolve({ key: input.key, size: input.content.byteLength });
-  }
-  get(key: string): Promise<Buffer> {
-    const file = this.files.get(key);
-    if (!file) return Promise.reject(new NotFoundException('FILE_NOT_FOUND', key));
-    return Promise.resolve(file);
-  }
-  delete(key: string): Promise<void> {
-    this.files.delete(key);
-    return Promise.resolve();
-  }
-  exists(key: string): Promise<boolean> {
-    return Promise.resolve(this.files.has(key));
-  }
-  url(key: string): Promise<string> {
-    return Promise.resolve(`mem://${key}`);
-  }
-}
+export {
+  FakeAuditLog,
+  FakeEventBus,
+  FakeFileStorage,
+  FakeNotifier,
+  FakeUnitOfWork,
+} from '@shared/testing/fakes';
 
 export class FakeConsultantDirectory extends ConsultantDirectoryPort {
   constructor(public consultants: ConsultantCandidate[] = []) {

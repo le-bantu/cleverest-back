@@ -9,8 +9,8 @@ import { loadQuote } from '../services/quote-loader';
 import { ClientQuoteView, toClientQuoteView } from '../views/quote.views';
 
 /**
- * Client decision on a VALIDÉ_ADMIN quote. NB: `sign` becomes contract-level
- * in Lot 3 (single signature path); `reject` stays here.
+ * Client decision on a VALIDÉ_ADMIN quote. Only `reject` remains here: signing
+ * is contract-level (`PATCH /contracts/{id}`), the single signature path.
  */
 @Injectable()
 export class SignOrRejectQuoteUseCase implements UseCase<SignOrRejectQuoteInput, ClientQuoteView> {
@@ -22,14 +22,19 @@ export class SignOrRejectQuoteUseCase implements UseCase<SignOrRejectQuoteInput,
 
   async execute(input: SignOrRejectQuoteInput): Promise<ClientQuoteView> {
     const by = requireActor(input.actor, QuoteActor.CLIENT);
+    if (input.action === 'sign') {
+      throw new ValidationException(
+        'SIGN_VIA_CONTRACT',
+        'A quote is signed by uploading the signed contract (PATCH /contracts/{id})',
+      );
+    }
+    if (input.action !== 'reject') {
+      throw new ValidationException('INVALID_ACTION', 'action must be "reject"');
+    }
     const quote = await loadQuote(this.quotes, input.quoteId);
     if (!quote.isOwnedBy(by.actorId) || quote.isSubquote) throw quoteNotFound(input.quoteId);
-    const now = this.clock.now();
 
-    if (input.action === 'sign') quote.signByClient(by, now);
-    else if (input.action === 'reject') quote.rejectByClient(input.rejectedReason, by, now);
-    else throw new ValidationException('INVALID_ACTION', 'action must be "sign" or "reject"');
-
+    quote.rejectByClient(input.rejectedReason, by, this.clock.now());
     await this.committer.commit([quote]);
     return toClientQuoteView(quote);
   }

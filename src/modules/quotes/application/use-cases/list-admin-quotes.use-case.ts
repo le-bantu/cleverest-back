@@ -24,6 +24,7 @@ export class ListAdminQuotesUseCase implements UseCase<ListAdminQuotesInput, Pag
       isValidated: input.isValidated,
       isSubquote: input.isSubquote,
       parentQuoteId: input.parentQuoteId,
+      hasContract: input.hasContract,
     });
     const now = this.clock.now();
     return page.map((q) => toAdminQuoteView(q, now));

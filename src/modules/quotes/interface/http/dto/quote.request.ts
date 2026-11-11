@@ -17,6 +17,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { PageQueryDto } from '@shared/interface/http/dto/page-query.dto';
+import { toArray, toBool } from '@shared/interface/http/dto/transforms';
 import {
   ALL_QUOTE_STATUSES,
   ALL_QUOTE_TYPES,
@@ -27,40 +28,7 @@ import {
 const STATUSES = ALL_QUOTE_STATUSES as string[];
 const TYPES = ALL_QUOTE_TYPES as string[];
 
-type TransformArgs = { value: unknown; obj?: Record<string, unknown>; key?: string };
-
-/** Raw input value (implicit conversion would already have turned "false" into true). */
-const raw = ({ value, obj, key }: TransformArgs): unknown =>
-  obj && key && key in obj ? obj[key] : value;
-
-/** Query-string booleans: "true"/"1" → true, "false"/"0" → false. */
-export const toBool = (args: TransformArgs): unknown => {
-  const value = raw(args);
-  if (value === undefined || value === null || value === '') return undefined;
-  if (typeof value === 'boolean') return value;
-  if (['true', '1'].includes(String(value).toLowerCase())) return true;
-  if (['false', '0'].includes(String(value).toLowerCase())) return false;
-  return value;
-};
-
-/** Multipart arrays: repeated field, JSON array or comma-separated list. */
-export const toArray = (args: TransformArgs): unknown => {
-  const value = raw(args);
-  if (value === undefined || value === null || value === '') return undefined;
-  if (Array.isArray(value)) return value;
-  const text = String(value).trim();
-  if (text.startsWith('[')) {
-    try {
-      return JSON.parse(text) as unknown;
-    } catch {
-      return value;
-    }
-  }
-  return text
-    .split(',')
-    .map((v) => v.trim())
-    .filter(Boolean);
-};
+export { toArray, toBool };
 
 export class CreateQuoteRequest {
   @ApiProperty({ enum: TYPES })
@@ -101,6 +69,12 @@ class DateRangeQuery extends PageQueryDto {
   @Type(() => Date)
   @IsDate()
   dateMax?: Date;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(toBool)
+  @IsBoolean()
+  hasContract?: boolean;
 }
 
 export class ListMyQuotesQuery extends DateRangeQuery {}
@@ -122,6 +96,12 @@ export class ListConsultantQuotesQuery extends PageQueryDto {
   @Transform(toBool)
   @IsBoolean()
   isValidated?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(toBool)
+  @IsBoolean()
+  hasContract?: boolean;
 }
 
 export class ListAdminQuotesQuery extends DateRangeQuery {
@@ -149,7 +129,11 @@ export class ListAdminQuotesQuery extends DateRangeQuery {
 }
 
 export class SignQuoteRequest {
-  @ApiProperty({ enum: ['sign', 'reject'] })
+  @ApiProperty({
+    enum: ['sign', 'reject'],
+    description:
+      '"sign" is refused (422 SIGN_VIA_CONTRACT): signing goes through PATCH /contracts/{id}',
+  })
   @IsIn(['sign', 'reject'])
   action!: 'sign' | 'reject';
 

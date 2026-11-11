@@ -26,7 +26,7 @@ describe('quotes (e2e)', () => {
   beforeEach(async () => {
     const db = getTestPrisma();
     await db.$executeRawUnsafe(
-      'TRUNCATE TABLE "users","roles","permissions","audit_logs","notifications","quotes" RESTART IDENTITY CASCADE;',
+      'TRUNCATE TABLE "users","roles","permissions","audit_logs","notifications","quotes","contracts" RESTART IDENTITY CASCADE;',
     );
     actors = await seedActors(db);
     // second consultant shares the actors' password hash for login
@@ -87,7 +87,7 @@ describe('quotes (e2e)', () => {
     await api(app)
       .patch(`/api/quotes/${quote.id}/sign`)
       .set('Authorization', auth.client)
-      .send({ action: 'sign' })
+      .send({ action: 'reject' })
       .expect(409)
       .expect((r) => expect(r.body.error).toBe('QUOTE_TRANSITION_NOT_ALLOWED'));
 
@@ -113,10 +113,27 @@ describe('quotes (e2e)', () => {
       .expect(200)
       .expect((r) => expect(r.body.status).toBe('VALIDÉ_ADMIN'));
 
+    // signing is contract-level only (single signature path)
     await api(app)
       .patch(`/api/quotes/${quote.id}/sign`)
       .set('Authorization', auth.client)
       .send({ action: 'sign' })
+      .expect(422)
+      .expect((r) => expect(r.body.error).toBe('SIGN_VIA_CONTRACT'));
+    const contract = await api(app)
+      .post('/api/admin/contracts')
+      .set('Authorization', auth.superadmin)
+      .field('quoteId', quote.id)
+      .attach('file', Buffer.from('%PDF-1.4 contrat'), 'contrat.pdf')
+      .expect(201);
+    await api(app)
+      .patch(`/api/contracts/${contract.body.id as string}`)
+      .set('Authorization', auth.client)
+      .attach('file', Buffer.from('%PDF-1.4 signé'), 'signe.pdf')
+      .expect(200);
+    await api(app)
+      .get(`/api/quotes/${quote.id}`)
+      .set('Authorization', auth.client)
       .expect(200)
       .expect((r) => expect(r.body).toMatchObject({ status: 'SIGNÉ_CLIENT', price: 2500 }));
 

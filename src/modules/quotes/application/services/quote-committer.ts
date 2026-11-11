@@ -32,6 +32,11 @@ export class QuoteCommitter {
         await this.quotes.save(quote, tx);
       }
     });
+    await this.afterCommit(aggregates);
+  }
+
+  /** Audit + publish, once the aggregates are durably saved (possibly by another context's UoW). */
+  async afterCommit(aggregates: Quote[]): Promise<void> {
     const events = aggregates.flatMap((q) => q.pullDomainEvents());
     await this.auditEvents(events);
     await this.events.publish(events);

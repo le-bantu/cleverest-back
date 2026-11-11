@@ -19,6 +19,8 @@ export interface QuoteListFilter {
   isValidated?: boolean;
   isSubquote?: boolean;
   parentQuoteId?: string;
+  /** a contract exists (or not) for the quote */
+  hasContract?: boolean;
 }
 
 /**
@@ -32,6 +34,8 @@ export abstract class QuoteRepository {
   abstract hasSubquotes(parentQuoteId: string, tx?: unknown): Promise<boolean>;
   abstract save(quote: Quote, tx?: unknown): Promise<void>;
   abstract delete(id: string, tx?: unknown): Promise<void>;
+  /** Read-only projection of the contracts context: does a contract exist for this quote? */
+  abstract hasContract(quoteId: string): Promise<boolean>;
   /** Highest numeric part of all request numbers (0 when there is none). */
   abstract lastRequestSequence(tx?: unknown): Promise<number>;
   abstract list(query: PageQuery, filter: QuoteListFilter): Promise<Page<Quote>>;

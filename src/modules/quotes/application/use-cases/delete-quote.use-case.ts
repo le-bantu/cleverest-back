@@ -5,6 +5,7 @@ import {
   QUOTE_DOCUMENT_REPOSITORY,
   QUOTE_REPOSITORY,
   QuoteActor,
+  quoteConflict,
   QuoteDocumentRepository,
   QuoteRepository,
 } from '../../domain';
@@ -34,6 +35,9 @@ export class DeleteQuoteUseCase implements UseCase<QuoteRef, void> {
     const quote = await loadQuote(this.quotes, input.quoteId);
     const subquotes = quote.isSubquote ? [] : await this.quotes.findSubquotes(quote.id);
     quote.assertDeletableBy(by, subquotes.length > 0);
+    if (await this.quotes.hasContract(quote.id)) {
+      throw quoteConflict('QUOTE_HAS_CONTRACT', 'A contract exists for this quote');
+    }
 
     const affected = [quote, ...subquotes];
     const files = (await Promise.all(affected.map((q) => this.documents.listByQuote(q.id)))).flat();

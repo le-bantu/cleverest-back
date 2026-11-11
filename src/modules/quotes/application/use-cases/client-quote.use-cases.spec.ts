@@ -108,6 +108,12 @@ describe('ListMyQuotesUseCase', () => {
       type: 'CONSULTATION',
     });
     expect(filtered.data.map((q) => q.id)).toEqual([mineCote.id]);
+
+    ctx.quotes.contractQuoteIds.add(mine.id);
+    const withContract = await uc.execute({ actor: actor.client(), hasContract: true });
+    expect(withContract.data.map((q) => q.id)).toEqual([mine.id]);
+    const without = await uc.execute({ actor: actor.client(), hasContract: false });
+    expect(without.data.map((q) => q.id)).toEqual([mineCote.id]);
     await expect(uc.execute({ actor: actor.consultant() })).rejects.toBeInstanceOf(
       ForbiddenException,
     );
@@ -216,6 +222,18 @@ describe('DeleteQuoteUseCase', () => {
     );
   });
 
+  it('nobody deletes a quote once a contract exists (409 QUOTE_HAS_CONTRACT)', async () => {
+    const { ctx, uc } = setup();
+    const q = aQuote().withStatus(S.VALIDE_ADMIN).withPrice(10).build();
+    ctx.quotes.store.set(q.id, q);
+    ctx.quotes.contractQuoteIds.add(q.id);
+    await expect(uc.execute({ actor: actor.admin(), quoteId: q.id })).rejects.toMatchObject({
+      code: 'QUOTE_HAS_CONTRACT',
+      httpStatus: 409,
+    });
+    expect(ctx.quotes.store.has(q.id)).toBe(true);
+  });
+
   it('admin deletes a quote with its subquotes and stored files', async () => {
     const { ctx, uc } = setup();
     const q = aQuote().withStatus(S.TRAITEMENT_CONSULTANT).build();
@@ -254,18 +272,13 @@ describe('SignOrRejectQuoteUseCase', () => {
     return { ctx, q, uc: new SignOrRejectQuoteUseCase(ctx.quotes, ctx.committer, ctx.clock) };
   };
 
-  it('sign → SIGNÉ_CLIENT with audit row and visible price', async () => {
+  it('sign is refused here: the single signature path is the contract (422 SIGN_VIA_CONTRACT)', async () => {
     const { ctx, q, uc } = setup();
-    const view = await uc.execute({ actor: actor.client(), quoteId: q.id, action: 'sign' });
-    expect(view.status).toBe(S.SIGNE_CLIENT);
-    expect(view.price).toBe(800);
-    expect(ctx.audit.entries).toEqual([
-      expect.objectContaining({
-        action: 'STATUS_CHANGED',
-        fromStatus: S.VALIDE_ADMIN,
-        toStatus: S.SIGNE_CLIENT,
-      }),
-    ]);
+    await expect(
+      uc.execute({ actor: actor.client(), quoteId: q.id, action: 'sign' }),
+    ).rejects.toMatchObject({ code: 'SIGN_VIA_CONTRACT', httpStatus: 422 });
+    expect(ctx.quotes.saves).toBe(0);
+    expect(ctx.audit.entries).toEqual([]);
   });
 
   it('reject → REJETÉ with reason', async () => {
@@ -282,14 +295,14 @@ describe('SignOrRejectQuoteUseCase', () => {
   it('non-owner gets 404, illegal transition 409, bad action 422', async () => {
     const { q, uc } = setup();
     await expect(
-      uc.execute({ actor: actor.client('client-2'), quoteId: q.id, action: 'sign' }),
+      uc.execute({ actor: actor.client('client-2'), quoteId: q.id, action: 'reject' }),
     ).rejects.toBeInstanceOf(NotFoundException);
     await expect(
       uc.execute({ actor: actor.client(), quoteId: q.id, action: 'nope' as never }),
     ).rejects.toMatchObject({ code: 'INVALID_ACTION' });
     const pending = setup(S.COTE);
     await expect(
-      pending.uc.execute({ actor: actor.client(), quoteId: pending.q.id, action: 'sign' }),
+      pending.uc.execute({ actor: actor.client(), quoteId: pending.q.id, action: 'reject' }),
     ).rejects.toMatchObject({ httpStatus: 409 });
     expect(pending.ctx.quotes.saves).toBe(0);
   });

@@ -24,6 +24,7 @@ export class ListConsultantQuotesUseCase implements UseCase<
       status: input.status ? parseQuoteStatus(input.status) : undefined,
       isSubquote: input.isSubquote,
       isValidated: input.isValidated,
+      hasContract: input.hasContract,
     });
     const now = this.clock.now();
     return page.map((q) => toConsultantQuoteView(q, by.actorId, now));

@@ -20,6 +20,7 @@ export interface CommonListFilters {
   type?: string;
   dateMin?: Date;
   dateMax?: Date;
+  hasContract?: boolean;
 }
 
 export interface ListMyQuotesInput extends Partial<PageQuery>, CommonListFilters {
@@ -31,6 +32,7 @@ export interface ListConsultantQuotesInput extends Partial<PageQuery> {
   status?: string;
   isSubquote?: boolean;
   isValidated?: boolean;
+  hasContract?: boolean;
 }
 
 export interface ListAdminQuotesInput extends Partial<PageQuery>, CommonListFilters {

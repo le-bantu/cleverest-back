@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { quotesInfrastructureProviders } from './infrastructure/quotes.providers';
 import { QuoteCommitter } from './application/services/quote-committer';
 import { QuoteNotifications } from './application/services/quote-notifications';
+import { QuotesFacade } from './application/quotes.facade';
 import { CreateQuoteUseCase } from './application/use-cases/create-quote.use-case';
 import { ListMyQuotesUseCase } from './application/use-cases/list-my-quotes.use-case';
 import { ListConsultantQuotesUseCase } from './application/use-cases/list-consultant-quotes.use-case';
@@ -66,7 +67,13 @@ const useCases = [
     QuotesConsultantController,
     ConsultantQuoteDocumentsController,
   ],
-  providers: [...quotesInfrastructureProviders, QuoteCommitter, QuoteNotifications, ...useCases],
-  exports: [GetQuoteUseCase],
+  providers: [
+    ...quotesInfrastructureProviders,
+    QuoteCommitter,
+    QuoteNotifications,
+    QuotesFacade,
+    ...useCases,
+  ],
+  exports: [GetQuoteUseCase, QuotesFacade],
 })
 export class QuotesModule {}

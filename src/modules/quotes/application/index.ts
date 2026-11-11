@@ -25,3 +25,4 @@ export * from './use-cases/list-quote-documents.use-case';
 export * from './use-cases/download-quote-document.use-case';
 export * from './use-cases/delete-quote-document.use-case';
 export * from './use-cases/set-document-visibility.use-case';
+export * from './quotes.facade';
