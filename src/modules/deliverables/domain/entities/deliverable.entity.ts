@@ -5,7 +5,12 @@ import {
   MAX_UPLOAD_BYTES,
   StoredFileRef,
 } from '@shared/kernel';
-import { deliverableNotFound, missionNotActive, notAssignedToMission } from '../errors';
+import {
+  consultantContractNotSigned,
+  deliverableNotFound,
+  missionNotActive,
+  notAssignedToMission,
+} from '../errors';
 import {
   DeliverableUploaded,
   DeliverableValidatedByAdmin,
@@ -54,6 +59,8 @@ export class Deliverable extends AbstractAggregateRoot<string> {
       id: string;
       mission: MissionForDeliverable;
       consultantId: string;
+      /** the consultant signed their consultant contract for this mission's quote */
+      engaged: boolean;
       file: StoredFileRef;
     },
     now: Date,
@@ -61,6 +68,7 @@ export class Deliverable extends AbstractAggregateRoot<string> {
     const { mission } = input;
     if (!mission.consultantIds.includes(input.consultantId)) throw notAssignedToMission();
     if (!mission.active) throw missionNotActive(mission.id, mission.status);
+    if (!input.engaged) throw consultantContractNotSigned();
     assertFileAllowed(input.file, DELIVERABLE_FILE_POLICY);
     const deliverable = new Deliverable({
       id: input.id,

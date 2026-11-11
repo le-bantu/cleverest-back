@@ -8,3 +8,5 @@ export * from './use-cases/sign-contract.use-case';
 export * from './use-cases/list-contracts.use-case';
 export * from './use-cases/get-contract.use-case';
 export * from './use-cases/download-contract.use-case';
+export * from './services/consultant-contract-services';
+export * from './use-cases/consultant-contracts.use-cases';

@@ -44,7 +44,8 @@ model User {
   quoteDocuments      QuoteDocument[]
   quoteDocumentGrants QuoteDocumentVisibility[]
 
-  contractsAsClient Contract[] @relation("ContractClient")
+  contractsAsClient   Contract[]           @relation("ContractClient")
+  consultantContracts ConsultantContract[] @relation("ConsultantContractConsultant")
 
   missionsAsClient   Mission[]           @relation("MissionClient")
   missionAssignments MissionConsultant[]
@@ -278,6 +279,9 @@ model Quote {
   contract    Contract?
   missions    Mission[]
 
+  consultantContracts     ConsultantContract[] @relation("ConsultantContractQuote")
+  consultantContractsRoot ConsultantContract[] @relation("ConsultantContractRootQuote")
+
   @@index([clientId])
   @@index([status])
   @@index([parentQuoteId])
@@ -364,6 +368,38 @@ model Contract {
   @@index([signed])
   @@index([createdAt])
   @@map("contracts")
+}
+
+/// Engagement Cleverest ↔ ONE consultant, backed by the quote the consultant priced
+/// (a subquote, or the main quote when it was not split). Distinct from `Contract` (client).
+model ConsultantContract {
+  id               String    @id @default(uuid()) @db.Uuid
+  quoteId          String    @db.Uuid
+  quote            Quote     @relation("ConsultantContractQuote", fields: [quoteId], references: [id], onDelete: Restrict)
+  /// main quote (= quoteId, or the parent of a subquote) — links the engagement to the mission
+  rootQuoteId      String    @db.Uuid
+  rootQuote        Quote     @relation("ConsultantContractRootQuote", fields: [rootQuoteId], references: [id], onDelete: Restrict)
+  consultantId     String    @db.Uuid
+  consultant       User      @relation("ConsultantContractConsultant", fields: [consultantId], references: [id], onDelete: Restrict)
+  amount           Decimal   @db.Decimal(14, 2)
+  currency         String    @default("EUR")
+  createdById      String?   @db.Uuid
+  originalFileKey  String
+  originalFileName String
+  originalMimeType String?
+  originalSize     Int
+  signedFileKey    String?
+  signedFileName   String?
+  signedMimeType   String?
+  signedSize       Int?
+  signedAt         DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([quoteId, consultantId])
+  @@index([consultantId, rootQuoteId])
+  @@index([rootQuoteId])
+  @@map("consultant_contracts")
 }
 
 // ---------------------------------------------------------------------------

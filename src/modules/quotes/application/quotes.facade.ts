@@ -18,6 +18,9 @@ export interface QuoteSummary {
   title: string | null;
   status: QuoteStatus;
   isSubquote: boolean;
+  parentQuoteId: string | null;
+  /** validated price, EUR */
+  price: number | null;
   leadConsultantId: string | null;
   consultantIds: string[];
 }
@@ -51,6 +54,8 @@ export class QuotesFacade {
       title: q.title,
       status: q.status,
       isSubquote: q.isSubquote,
+      parentQuoteId: q.parentQuoteId,
+      price: q.price?.amount ?? null,
       leadConsultantId: q.leadConsultantId,
       consultantIds: q.consultantIds,
     };

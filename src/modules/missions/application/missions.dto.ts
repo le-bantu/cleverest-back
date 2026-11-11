@@ -65,6 +65,8 @@ export interface ReorderMissionTasksInput extends MissionRef {
 /** What the deliverables context may know about a mission. */
 export interface MissionSummary {
   id: string;
+  /** main quote the mission executes */
+  quoteId: string;
   clientId: string;
   consultantIds: string[];
   status: string;

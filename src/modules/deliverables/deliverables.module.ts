@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BestEffortNotifier } from '@shared/application/services/best-effort-notifier';
 import { MissionsModule } from '@modules/missions/missions.module';
+import { ContractsModule } from '@modules/contracts/contracts.module';
 import { deliverablesInfrastructureProviders } from './infrastructure/deliverables.providers';
 import { DeliverableCommitter } from './application/deliverable-services';
 import {
@@ -22,7 +23,7 @@ import {
 } from './interface/http/deliverables.controllers';
 
 @Module({
-  imports: [MissionsModule],
+  imports: [MissionsModule, ContractsModule],
   controllers: [
     DeliverablesController,
     ConsultantDeliverablesController,

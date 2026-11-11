@@ -165,6 +165,7 @@ describe('List / Get missions — scoped by audience', () => {
     const facade = new MissionsFacade(ctx.missions);
     expect(await facade.findSummary(mine.id)).toEqual({
       id: mine.id,
+      quoteId: mine.quoteId,
       clientId: 'client-1',
       consultantIds: ['c1', 'c2'],
       status: S.EN_COURS,

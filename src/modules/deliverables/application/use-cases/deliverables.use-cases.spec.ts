@@ -17,6 +17,7 @@ describe('UploadDeliverableUseCase', () => {
     const uc = new UploadDeliverableUseCase(
       ctx.deliverables,
       ctx.missions,
+      ctx.engagement,
       ctx.storage,
       ctx.committer,
       ctx.clock,
@@ -43,6 +44,17 @@ describe('UploadDeliverableUseCase', () => {
     expect(ctx.storage.files.has(`deliverables/${mission.id}/${view.id}.pdf`)).toBe(true);
     expect(ctx.bus.names()).toEqual(['deliverables.uploaded']);
     expect(ctx.notifier.sent).toEqual([]); // the client is not told before admin validation
+    expect(ctx.engagement.calls).toEqual([{ consultantId: 'c2', quoteId: 'quote-1' }]);
+  });
+
+  it('a consultant without a signed consultant contract cannot deliver (403)', async () => {
+    const { ctx, uc } = setup();
+    const mission = ctx.missions.add();
+    ctx.engagement.unsigned.add('c1');
+    await expect(
+      uc.execute({ actor: actors.consultant('c1'), missionId: mission.id, file: incomingFile() }),
+    ).rejects.toMatchObject({ code: 'CONSULTANT_CONTRACT_NOT_SIGNED', httpStatus: 403 });
+    expect(ctx.storage.files.size).toBe(0);
   });
 
   it('outsider or unknown mission → 404; inactive mission → 409; client → 403', async () => {

@@ -15,6 +15,8 @@ import {
   Deliverable,
   DELIVERABLE_REPOSITORY,
   DeliverableRepository,
+  CONSULTANT_ENGAGEMENT,
+  ConsultantEngagementPort,
   MISSION_GATEWAY,
   MissionGatewayPort,
 } from '../../domain';
@@ -40,6 +42,7 @@ export class UploadDeliverableUseCase implements UseCase<UploadDeliverableInput,
   constructor(
     @Inject(DELIVERABLE_REPOSITORY) private readonly deliverables: DeliverableRepository,
     @Inject(MISSION_GATEWAY) private readonly missions: MissionGatewayPort,
+    @Inject(CONSULTANT_ENGAGEMENT) private readonly engagement: ConsultantEngagementPort,
     @Inject(FILE_STORAGE) private readonly storage: FileStoragePort,
     private readonly committer: DeliverableCommitter,
     @Inject(CLOCK) private readonly clock: Clock,
@@ -59,7 +62,13 @@ export class UploadDeliverableUseCase implements UseCase<UploadDeliverableInput,
       input.file,
     );
     const deliverable = Deliverable.upload(
-      { id, mission, consultantId: by.userId, file },
+      {
+        id,
+        mission,
+        consultantId: by.userId,
+        engaged: await this.engagement.isEngaged(by.userId, mission.quoteId),
+        file,
+      },
       this.clock.now(),
     );
     await storeThenPersist(this.storage, file, input.file.buffer, () =>

@@ -8,6 +8,7 @@ import {
   DeliverableRepository,
   MissionForDeliverable,
   MissionGatewayPort,
+  ConsultantEngagementPort,
 } from '../domain';
 import { DeliverableCommitter } from '../application/deliverable-services';
 
@@ -55,6 +56,7 @@ export class FakeMissionGateway extends MissionGatewayPort {
   add(overrides: Partial<MissionForDeliverable> = {}): MissionForDeliverable {
     const m: MissionForDeliverable = {
       id: generateUuid(),
+      quoteId: 'quote-1',
       clientId: 'client-1',
       consultantIds: ['c1', 'c2'],
       status: 'EN_COURS',
@@ -69,15 +71,26 @@ export class FakeMissionGateway extends MissionGatewayPort {
   }
 }
 
+/** Every consultant is engaged unless listed in `unsigned`. */
+export class FakeConsultantEngagement extends ConsultantEngagementPort {
+  readonly unsigned = new Set<string>();
+  readonly calls: Array<{ consultantId: string; quoteId: string }> = [];
+  isEngaged(consultantId: string, quoteId: string): Promise<boolean> {
+    this.calls.push({ consultantId, quoteId });
+    return Promise.resolve(!this.unsigned.has(consultantId));
+  }
+}
+
 export const deliverablesTestContext = () => {
   const deliverables = new InMemoryDeliverableRepository();
   const missions = new FakeMissionGateway();
+  const engagement = new FakeConsultantEngagement();
   const bus = new FakeEventBus();
   const notifier = new FakeNotifier();
   const storage = new FakeFileStorage();
   const clock = new FixedClock(NOW);
   const committer = new DeliverableCommitter(deliverables, bus, new BestEffortNotifier(notifier));
-  return { deliverables, missions, bus, notifier, storage, clock, committer };
+  return { deliverables, missions, engagement, bus, notifier, storage, clock, committer };
 };
 
 export const aDeliverable = (overrides: Partial<DeliverableProps> = {}): Deliverable => {

@@ -26,10 +26,16 @@ describe('QuotesFacade', () => {
       title: 'Audit fiscal',
       status: S.EN_ATTENTE,
       isSubquote: false,
+      parentQuoteId: null,
+      price: null,
       leadConsultantId: 'c2',
       consultantIds: ['c1', 'c2'],
     });
     expect(await facade.findSummary('nope')).toBeNull();
+
+    const priced = aQuote().withStatus(S.VALIDE_ADMIN).withPrice(750).build();
+    ctx.quotes.store.set(priced.id, priced);
+    expect((await facade.findSummary(priced.id))?.price).toBe(750);
   });
 
   it('prepares the client signature: checks now, writes in the caller tx, audits on finalize', async () => {

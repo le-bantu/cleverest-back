@@ -9,6 +9,7 @@ import {
 const LATER = new Date(NOW.getTime() + 1000);
 const mission = (overrides = {}) => ({
   id: 'm1',
+  quoteId: 'q1',
   clientId: 'client-1',
   consultantIds: ['c1'],
   status: 'EN_COURS',
@@ -19,7 +20,10 @@ const file = { key: 'k', originalName: 'rapport.zip', mimeType: null, size: 9 };
 
 describe('Deliverable', () => {
   it('is uploaded by an assigned consultant on an active mission, unvalidated', () => {
-    const d = Deliverable.upload({ id: 'd1', mission: mission(), consultantId: 'c1', file }, NOW);
+    const d = Deliverable.upload(
+      { id: 'd1', mission: mission(), consultantId: 'c1', engaged: true, file },
+      NOW,
+    );
     expect(d).toMatchObject({
       missionId: 'm1',
       consultantId: 'c1',
@@ -35,9 +39,12 @@ describe('Deliverable', () => {
     expect(d.pullDomainEvents()).toEqual([expect.any(DeliverableUploaded)]);
   });
 
-  it('refuses a non-assigned consultant (403), an inactive mission (409), an empty file', () => {
+  it('refuses a non-assigned consultant (403), an inactive mission (409), an unsigned engagement (403), an empty file', () => {
     expect(() =>
-      Deliverable.upload({ id: 'd', mission: mission(), consultantId: 'c9', file }, NOW),
+      Deliverable.upload(
+        { id: 'd', mission: mission(), consultantId: 'c9', engaged: true, file },
+        NOW,
+      ),
     ).toThrow(expect.objectContaining({ code: 'MISSION_NOT_ASSIGNED', httpStatus: 403 }));
     expect(() =>
       Deliverable.upload(
@@ -45,6 +52,7 @@ describe('Deliverable', () => {
           id: 'd',
           mission: mission({ active: false, status: 'EN_ATTENTE' }),
           consultantId: 'c1',
+          engaged: true,
           file,
         },
         NOW,
@@ -52,7 +60,19 @@ describe('Deliverable', () => {
     ).toThrow(expect.objectContaining({ code: 'MISSION_NOT_ACTIVE', httpStatus: 409 }));
     expect(() =>
       Deliverable.upload(
-        { id: 'd', mission: mission(), consultantId: 'c1', file: { ...file, size: 0 } },
+        { id: 'd', mission: mission(), consultantId: 'c1', engaged: false, file },
+        NOW,
+      ),
+    ).toThrow(expect.objectContaining({ code: 'CONSULTANT_CONTRACT_NOT_SIGNED', httpStatus: 403 }));
+    expect(() =>
+      Deliverable.upload(
+        {
+          id: 'd',
+          mission: mission(),
+          consultantId: 'c1',
+          engaged: true,
+          file: { ...file, size: 0 },
+        },
         NOW,
       ),
     ).toThrow(expect.objectContaining({ code: 'FILE_EMPTY' }));

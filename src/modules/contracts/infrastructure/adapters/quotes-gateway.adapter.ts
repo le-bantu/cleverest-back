@@ -3,6 +3,11 @@ import { QuotesFacade } from '@modules/quotes/application/quotes.facade';
 import { QuoteStatus } from '@modules/quotes/domain';
 import { PendingQuoteSignature, QuoteForContract, QuoteGatewayPort } from '../../domain';
 
+const PRICE_VALIDATED: readonly QuoteStatus[] = [
+  QuoteStatus.VALIDE_ADMIN,
+  QuoteStatus.SIGNE_CLIENT,
+];
+
 /** Contracts → quotes, through the quotes public facade only. */
 @Injectable()
 export class QuotesGatewayAdapter extends QuoteGatewayPort {
@@ -20,6 +25,10 @@ export class QuotesGatewayAdapter extends QuoteGatewayPort {
       status: q.status,
       isSubquote: q.isSubquote,
       readyForContract: q.status === QuoteStatus.VALIDE_ADMIN,
+      parentQuoteId: q.parentQuoteId,
+      price: q.price,
+      consultantIds: q.consultantIds,
+      priceValidated: PRICE_VALIDATED.includes(q.status),
     };
   }
 

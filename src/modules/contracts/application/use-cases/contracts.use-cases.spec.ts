@@ -239,7 +239,7 @@ describe('List / Get / Download contracts', () => {
 
   it('the facade exposes a summary for missions', async () => {
     const { ctx, mine } = setup();
-    const facade = new ContractsFacade(ctx.contracts);
+    const facade = new ContractsFacade(ctx.contracts, ctx.consultantContracts);
     expect(await facade.findSummary(mine.id)).toEqual({
       id: mine.id,
       quoteId: mine.quoteId,

@@ -148,6 +148,20 @@ describe('deliverables (e2e)', () => {
       .expect((r) => expect(r.body.consultantId).toBe(w.consultant2.id));
   });
 
+  it('a consultant cannot deliver before signing their engagement with The Cleverest (403)', async () => {
+    const mission = await w.activeMission({ engaged: false });
+    await upload(mission.id).then((r) => {
+      expect(r.status).toBe(403);
+      expect(r.body.error).toBe('CONSULTANT_CONTRACT_NOT_SIGNED');
+    });
+    const contract = await w.consultantContract(mission.quoteId, w.consultant2.id, 300);
+    await upload(mission.id).then((r) => expect(r.status).toBe(403)); // drawn up, not signed yet
+    await w.signConsultantContract(contract.id, w.auth.consultant2);
+    await upload(mission.id).then((r) => expect(r.status).toBe(201));
+    // the lead is still not engaged
+    await upload(mission.id, w.auth.consultant).then((r) => expect(r.status).toBe(403));
+  });
+
   it('guards: outsider 404, pending mission 409, missing file 422, roles 401/403', async () => {
     const pending = await w.newMission();
     await w

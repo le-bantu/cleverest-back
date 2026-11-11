@@ -9,12 +9,30 @@ import { SignContractUseCase } from './application/use-cases/sign-contract.use-c
 import { ListContractsUseCase } from './application/use-cases/list-contracts.use-case';
 import { GetContractUseCase } from './application/use-cases/get-contract.use-case';
 import { DownloadContractUseCase } from './application/use-cases/download-contract.use-case';
+import {
+  ConsultantContractCommitter,
+  CreateConsultantContractUseCase,
+  DeleteConsultantContractUseCase,
+  DownloadConsultantContractUseCase,
+  GetConsultantContractUseCase,
+  ListConsultantContractsUseCase,
+  SignConsultantContractUseCase,
+} from './application';
+import {
+  AdminConsultantContractsController,
+  ConsultantContractsController,
+} from './interface/http/consultant-contracts.controllers';
 import { ContractsAdminController } from './interface/http/contracts-admin.controller';
 import { ContractsController } from './interface/http/contracts.controller';
 
 @Module({
   imports: [QuotesModule],
-  controllers: [ContractsAdminController, ContractsController],
+  controllers: [
+    ContractsAdminController,
+    ContractsController,
+    AdminConsultantContractsController,
+    ConsultantContractsController,
+  ],
   providers: [
     ...contractsInfrastructureProviders,
     BestEffortNotifier,
@@ -25,6 +43,13 @@ import { ContractsController } from './interface/http/contracts.controller';
     ListContractsUseCase,
     GetContractUseCase,
     DownloadContractUseCase,
+    ConsultantContractCommitter,
+    CreateConsultantContractUseCase,
+    SignConsultantContractUseCase,
+    ListConsultantContractsUseCase,
+    GetConsultantContractUseCase,
+    DownloadConsultantContractUseCase,
+    DeleteConsultantContractUseCase,
   ],
   exports: [ContractsFacade],
 })

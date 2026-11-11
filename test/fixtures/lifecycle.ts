@@ -14,6 +14,7 @@ export const LIFECYCLE_TABLES = [
   'notifications',
   'quotes',
   'contracts',
+  'consultant_contracts',
   'missions',
   'deliverables',
 ];
@@ -116,7 +117,9 @@ export class LifecycleWorld {
   }
 
   /** Signed contract → admin opens a mission (no team yet). */
-  async newMission(title = 'Audit fiscal'): Promise<{ id: string; contractId: string }> {
+  async newMission(
+    title = 'Audit fiscal',
+  ): Promise<{ id: string; contractId: string; quoteId: string }> {
     const contract = await this.signedContract();
     const res = await this.api()
       .post('/api/admin/missions')
@@ -126,12 +129,56 @@ export class LifecycleWorld {
       .field('deliveryDate', '2026-12-31T00:00:00.000Z')
       .attach('contractMission', Buffer.from('mission contract'), 'mission.docx')
       .expect(201);
-    return { id: res.body.id as string, contractId: contract.id };
+    return { id: res.body.id as string, contractId: contract.id, quoteId: contract.quoteId };
   }
 
-  /** New mission staffed with `consultant` (lead, from the quote) + `consultant2`, accepted. */
-  async activeMission(): Promise<{ id: string; contractId: string }> {
+  /** Admin draws up a consultant contract (multipart PDF). */
+  async consultantContract(
+    quoteId: string,
+    consultantId: string,
+    amount?: number,
+  ): Promise<{ id: string }> {
+    const req = this.api()
+      .post('/api/admin/consultant-contracts')
+      .set('Authorization', this.auth.superadmin)
+      .field('quoteId', quoteId)
+      .field('consultantId', consultantId);
+    if (amount !== undefined) req.field('amount', String(amount));
+    const res = await req.attach('file', PDF('engagement'), 'engagement.pdf').expect(201);
+    return { id: res.body.id as string };
+  }
+
+  async signConsultantContract(id: string, auth: string): Promise<void> {
+    await this.api()
+      .patch(`/api/consultant/contracts/${id}`)
+      .set('Authorization', auth)
+      .attach('file', PDF('engagement signé'), 'engagement-signe.pdf')
+      .expect(200);
+  }
+
+  /** `consultant` and `consultant2` both sign their engagement on the (non-split) quote. */
+  async engageTeam(quoteId: string): Promise<void> {
+    const team: Array<[string, string]> = [
+      [this.actors.consultant.id, this.auth.consultant],
+      [this.consultant2.id, this.auth.consultant2],
+    ];
+    for (const [consultantId, auth] of team) {
+      const contract = await this.consultantContract(quoteId, consultantId, 400);
+      await this.signConsultantContract(contract.id, auth);
+    }
+  }
+
+  /**
+   * New mission staffed with `consultant` (lead, from the quote) + `consultant2`,
+   * accepted; both consultants signed their engagement unless `engaged: false`.
+   */
+  async activeMission({ engaged = true } = {}): Promise<{
+    id: string;
+    contractId: string;
+    quoteId: string;
+  }> {
     const mission = await this.newMission();
+    if (engaged) await this.engageTeam(mission.quoteId);
     await this.api()
       .post(`/api/admin/missions/${mission.id}/assign`)
       .set('Authorization', this.auth.superadmin)

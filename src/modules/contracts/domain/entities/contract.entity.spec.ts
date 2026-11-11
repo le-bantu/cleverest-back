@@ -1,16 +1,8 @@
-import { aContract, NOW, pdf } from '../../testing/in-memory';
+import { aContract, aQuoteForContract, NOW, pdf } from '../../testing/in-memory';
 import { Contract } from './contract.entity';
 import { ContractCreated, ContractSigned } from '../events/contract.events';
 
-const quote = (overrides = {}) => ({
-  id: 'q1',
-  clientId: 'client-1',
-  requestNumber: 'req-001',
-  status: 'VALIDÉ_ADMIN',
-  isSubquote: false,
-  readyForContract: true,
-  ...overrides,
-});
+const quote = (overrides = {}) => aQuoteForContract({ id: 'q1', ...overrides });
 
 const create = (overrides: Partial<Parameters<typeof Contract.create>[0]> = {}) =>
   Contract.create(

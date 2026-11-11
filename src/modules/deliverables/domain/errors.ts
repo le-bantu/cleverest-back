@@ -6,6 +6,12 @@ export const deliverableNotFound = (id: string): NotFoundException =>
 export const notAssignedToMission = (): ForbiddenException =>
   new ForbiddenException('MISSION_NOT_ASSIGNED', 'You are not assigned to this mission');
 
+export const consultantContractNotSigned = (): ForbiddenException =>
+  new ForbiddenException(
+    'CONSULTANT_CONTRACT_NOT_SIGNED',
+    'Sign your contract with The Cleverest before delivering on this mission',
+  );
+
 export const missionNotActive = (missionId: string, status: string): ConflictException =>
   new ConflictException(
     'MISSION_NOT_ACTIVE',

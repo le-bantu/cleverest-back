@@ -94,7 +94,13 @@ export class PrismaQuoteRepository extends QuoteRepository {
   }
 
   async hasContract(quoteId: string): Promise<boolean> {
-    return (await this.prisma.contract.count({ where: { quoteId } })) > 0;
+    const [client, consultant] = await Promise.all([
+      this.prisma.contract.count({ where: { quoteId } }),
+      this.prisma.consultantContract.count({
+        where: { OR: [{ quoteId }, { rootQuoteId: quoteId }] },
+      }),
+    ]);
+    return client + consultant > 0;
   }
 
   async lastRequestSequence(tx?: unknown): Promise<number> {

@@ -12,6 +12,7 @@ export class MissionsFacade {
     if (!m) return null;
     return {
       id: m.id,
+      quoteId: m.quoteId,
       clientId: m.clientId,
       consultantIds: m.consultantIds,
       status: m.status,

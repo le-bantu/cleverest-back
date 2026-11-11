@@ -7,6 +7,13 @@ export interface QuoteForContract {
   isSubquote: boolean;
   /** status is VALIDÉ_ADMIN */
   readyForContract: boolean;
+  /** main quote of a subquote, null for a main quote */
+  parentQuoteId: string | null;
+  /** price validated on this quote (for a subquote: the consultant's price) */
+  price: number | null;
+  consultantIds: string[];
+  /** an admin validated the price: VALIDÉ_ADMIN or SIGNÉ_CLIENT */
+  priceValidated: boolean;
 }
 
 /** A quote status change persisted inside the contract's transaction. */
