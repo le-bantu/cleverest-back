@@ -15,6 +15,7 @@ export const LIFECYCLE_TABLES = [
   'quotes',
   'contracts',
   'missions',
+  'deliverables',
 ];
 
 /**

@@ -56,6 +56,8 @@ const config: Config = {
     'src/modules/contracts/application/': { lines: 90, statements: 90 },
     'src/modules/missions/domain/': { lines: 90, statements: 90 },
     'src/modules/missions/application/': { lines: 90, statements: 90 },
+    'src/modules/deliverables/domain/': { lines: 90, statements: 90 },
+    'src/modules/deliverables/application/': { lines: 90, statements: 90 },
     'src/shared/kernel/': { lines: 90, statements: 90 },
   },
 };

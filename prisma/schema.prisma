@@ -50,6 +50,9 @@ model User {
   missionAssignments MissionConsultant[]
   missionTasks       MissionTask[]
 
+  deliverablesAuthored Deliverable[] @relation("DeliverableConsultant")
+  deliverablesReceived Deliverable[] @relation("DeliverableClient")
+
   @@index([isActive])
   @@map("users")
 }
@@ -404,8 +407,9 @@ model Mission {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
-  consultants MissionConsultant[]
-  tasks       MissionTask[]
+  consultants  MissionConsultant[]
+  tasks        MissionTask[]
+  deliverables Deliverable[]
 
   @@index([contractId])
   @@index([clientId])
@@ -443,6 +447,38 @@ model MissionTask {
 
   @@index([missionId, order])
   @@map("mission_tasks")
+}
+
+// ---------------------------------------------------------------------------
+// deliverables
+// ---------------------------------------------------------------------------
+
+/// Visible to the client only once adminValidated (enforced in the domain).
+model Deliverable {
+  id                 String    @id @default(uuid()) @db.Uuid
+  missionId          String    @db.Uuid
+  mission            Mission   @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  consultantId       String    @db.Uuid
+  consultant         User      @relation("DeliverableConsultant", fields: [consultantId], references: [id], onDelete: Restrict)
+  /// owner of the mission, captured at upload
+  clientId           String    @db.Uuid
+  client             User      @relation("DeliverableClient", fields: [clientId], references: [id], onDelete: Restrict)
+  fileKey            String
+  originalName       String
+  mimeType           String?
+  size               Int
+  uploadedAt         DateTime  @default(now())
+  clientValidated    Boolean   @default(false)
+  clientValidatedAt  DateTime?
+  adminValidated     Boolean   @default(false)
+  adminValidatedAt   DateTime?
+  adminValidatedById String?   @db.Uuid
+
+  @@index([missionId])
+  @@index([consultantId])
+  @@index([clientId, adminValidated])
+  @@index([uploadedAt])
+  @@map("deliverables")
 }
 
 // ---------------------------------------------------------------------------

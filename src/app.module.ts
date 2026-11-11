@@ -5,6 +5,7 @@ import { IdentityAccessModule } from '@modules/identity-access/identity-access.m
 import { QuotesModule } from '@modules/quotes/quotes.module';
 import { ContractsModule } from '@modules/contracts/contracts.module';
 import { MissionsModule } from '@modules/missions/missions.module';
+import { DeliverablesModule } from '@modules/deliverables/deliverables.module';
 import { ReportingModule } from '@modules/reporting/reporting.module';
 
 @Module({
@@ -14,6 +15,7 @@ import { ReportingModule } from '@modules/reporting/reporting.module';
     QuotesModule,
     ContractsModule,
     MissionsModule,
+    DeliverablesModule,
     ReportingModule,
   ],
   controllers: [HealthController],
