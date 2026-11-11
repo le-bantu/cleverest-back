@@ -14,6 +14,7 @@ export const LIFECYCLE_TABLES = [
   'notifications',
   'quotes',
   'contracts',
+  'missions',
 ];
 
 /**
@@ -111,5 +112,35 @@ export class LifecycleWorld {
       .attach('file', PDF('signé'), 'signe.pdf')
       .expect(200);
     return { id: contract.id, quoteId: quote.id };
+  }
+
+  /** Signed contract → admin opens a mission (no team yet). */
+  async newMission(title = 'Audit fiscal'): Promise<{ id: string; contractId: string }> {
+    const contract = await this.signedContract();
+    const res = await this.api()
+      .post('/api/admin/missions')
+      .set('Authorization', this.auth.superadmin)
+      .field('contractId', contract.id)
+      .field('title', title)
+      .field('deliveryDate', '2026-12-31T00:00:00.000Z')
+      .attach('contractMission', Buffer.from('mission contract'), 'mission.docx')
+      .expect(201);
+    return { id: res.body.id as string, contractId: contract.id };
+  }
+
+  /** New mission staffed with `consultant` (lead, from the quote) + `consultant2`, accepted. */
+  async activeMission(): Promise<{ id: string; contractId: string }> {
+    const mission = await this.newMission();
+    await this.api()
+      .post(`/api/admin/missions/${mission.id}/assign`)
+      .set('Authorization', this.auth.superadmin)
+      .send({ consultants: [{ id: this.consultant2.id }, { id: this.actors.consultant.id }] })
+      .expect(200);
+    await this.api()
+      .post(`/api/missions/${mission.id}/respond`)
+      .set('Authorization', this.auth.consultant)
+      .send({ action: 'accept' })
+      .expect(200);
+    return mission;
   }
 }

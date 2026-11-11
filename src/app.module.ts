@@ -4,10 +4,18 @@ import { HealthController } from '@shared/interface/http/health.controller';
 import { IdentityAccessModule } from '@modules/identity-access/identity-access.module';
 import { QuotesModule } from '@modules/quotes/quotes.module';
 import { ContractsModule } from '@modules/contracts/contracts.module';
+import { MissionsModule } from '@modules/missions/missions.module';
 import { ReportingModule } from '@modules/reporting/reporting.module';
 
 @Module({
-  imports: [SharedModule, IdentityAccessModule, QuotesModule, ContractsModule, ReportingModule],
+  imports: [
+    SharedModule,
+    IdentityAccessModule,
+    QuotesModule,
+    ContractsModule,
+    MissionsModule,
+    ReportingModule,
+  ],
   controllers: [HealthController],
 })
 export class AppModule {}

@@ -46,6 +46,10 @@ model User {
 
   contractsAsClient Contract[] @relation("ContractClient")
 
+  missionsAsClient   Mission[]           @relation("MissionClient")
+  missionAssignments MissionConsultant[]
+  missionTasks       MissionTask[]
+
   @@index([isActive])
   @@map("users")
 }
@@ -269,6 +273,7 @@ model Quote {
   consultants QuoteConsultant[]
   documents   QuoteDocument[]
   contract    Contract?
+  missions    Mission[]
 
   @@index([clientId])
   @@index([status])
@@ -350,10 +355,94 @@ model Contract {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
+  missions Mission[]
+
   @@index([clientId])
   @@index([signed])
   @@index([createdAt])
   @@map("contracts")
+}
+
+// ---------------------------------------------------------------------------
+// missions
+// ---------------------------------------------------------------------------
+
+enum MissionStatus {
+  EN_ATTENTE
+  EN_COURS
+  EN_VALIDATION
+  TERMINEE      @map("TERMINÉE")
+  REJETEE       @map("REJETÉE")
+}
+
+enum MissionTaskStatus {
+  A_FAIRE
+  EN_COURS
+  FAITE
+}
+
+model Mission {
+  id               String        @id @default(uuid()) @db.Uuid
+  contractId       String        @db.Uuid
+  contract         Contract      @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  /// captured from the contract at creation
+  quoteId          String        @db.Uuid
+  quote            Quote         @relation(fields: [quoteId], references: [id], onDelete: Restrict)
+  clientId         String        @db.Uuid
+  client           User          @relation("MissionClient", fields: [clientId], references: [id], onDelete: Restrict)
+  title            String
+  description      String?
+  status           MissionStatus @default(EN_ATTENTE)
+  /// 0-100; computed from tasks when the mission has any
+  progress         Int           @default(0)
+  deliveryDate     DateTime?
+  contractFileKey  String?
+  contractFileName String?
+  contractMimeType String?
+  contractSize     Int?
+  createdById      String?       @db.Uuid
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  consultants MissionConsultant[]
+  tasks       MissionTask[]
+
+  @@index([contractId])
+  @@index([clientId])
+  @@index([status])
+  @@index([deliveryDate])
+  @@map("missions")
+}
+
+/// Pivot mission ↔ consultant. At most one lead per mission (partial unique index in SQL).
+model MissionConsultant {
+  missionId    String   @db.Uuid
+  consultantId String   @db.Uuid
+  isLead       Boolean  @default(false)
+  assignedAt   DateTime @default(now())
+  mission      Mission  @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  consultant   User     @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+
+  @@id([missionId, consultantId])
+  @@index([consultantId])
+  @@map("mission_consultants")
+}
+
+model MissionTask {
+  id                   String            @id @default(uuid()) @db.Uuid
+  missionId            String            @db.Uuid
+  mission              Mission           @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  title                String
+  description          String?
+  order                Int
+  status               MissionTaskStatus @default(A_FAIRE)
+  assigneeConsultantId String?           @db.Uuid
+  assignee             User?             @relation(fields: [assigneeConsultantId], references: [id], onDelete: SetNull)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  @@index([missionId, order])
+  @@map("mission_tasks")
 }
 
 // ---------------------------------------------------------------------------
