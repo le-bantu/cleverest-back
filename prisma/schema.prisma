@@ -58,6 +58,10 @@ model User {
   clientInvoices     ClientInvoice[]     @relation("ClientInvoiceClient")
   consultantInvoices ConsultantInvoice[] @relation("ConsultantInvoiceConsultant")
 
+  prospects              Prospect[]   @relation("ProspectApporteur")
+  commissionsAsApporteur Commission[] @relation("CommissionApporteur")
+  commissionsAsClient    Commission[] @relation("CommissionClient")
+
   @@index([isActive])
   @@map("users")
 }
@@ -454,6 +458,7 @@ model Mission {
   payments           Payment[]
   clientInvoices     ClientInvoice[]
   consultantInvoices ConsultantInvoice[]
+  commission         Commission?
 
   @@index([contractId])
   @@index([clientId])
@@ -644,4 +649,79 @@ model ConsultantInvoice {
   @@index([paidAt])
   @@index([uploadedAt])
   @@map("consultant_invoices")
+}
+
+// ---------------------------------------------------------------------------
+// apporteurs (prospects & commissions)
+// ---------------------------------------------------------------------------
+
+enum ProspectStatus {
+  EN_ATTENTE
+  CONVERTI
+  REJETE     @map("REJETÉ")
+}
+
+enum CommissionStatus {
+  EN_ATTENTE
+  VALIDEE    @map("VALIDÉE")
+  PAYEE      @map("PAYÉE")
+}
+
+/// A business lead declared by an apporteur; converted by an admin into a client + signed deal.
+model Prospect {
+  id               String         @id @default(uuid()) @db.Uuid
+  apporteurId      String         @db.Uuid
+  apporteur        User           @relation("ProspectApporteur", fields: [apporteurId], references: [id], onDelete: Restrict)
+  name             String
+  company          String?
+  contactEmail     String?
+  contactPhone     String?
+  documentKey      String?
+  documentName     String?
+  documentMimeType String?
+  documentSize     Int?
+  status           ProspectStatus @default(EN_ATTENTE)
+  rejectedReason   String?
+  /// set on conversion
+  clientId         String?        @db.Uuid
+  missionId        String?        @db.Uuid
+  processedAt      DateTime?
+  processedById    String?        @db.Uuid
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  commission Commission?
+
+  @@index([apporteurId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("prospects")
+}
+
+/// What Cleverest owes the apporteur for a converted prospect (one per prospect / mission).
+model Commission {
+  id           String           @id @default(uuid()) @db.Uuid
+  apporteurId  String           @db.Uuid
+  apporteur    User             @relation("CommissionApporteur", fields: [apporteurId], references: [id], onDelete: Restrict)
+  prospectId   String           @unique @db.Uuid
+  prospect     Prospect         @relation(fields: [prospectId], references: [id], onDelete: Restrict)
+  clientId     String           @db.Uuid
+  client       User             @relation("CommissionClient", fields: [clientId], references: [id], onDelete: Restrict)
+  missionId    String           @unique @db.Uuid
+  mission      Mission          @relation(fields: [missionId], references: [id], onDelete: Restrict)
+  /// snapshots for the apporteur's list (no cross-context join)
+  clientName   String
+  missionTitle String
+  /// null until an admin sets it
+  amount       Decimal?         @db.Decimal(14, 2)
+  currency     String           @default("EUR")
+  status       CommissionStatus @default(EN_ATTENTE)
+  validatedAt  DateTime?
+  paidAt       DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([apporteurId])
+  @@index([status])
+  @@map("commissions")
 }

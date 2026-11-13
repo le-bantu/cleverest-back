@@ -21,3 +21,4 @@ export * from './use-cases/list-all-users.use-case';
 export * from './use-cases/update-own-profile.use-case';
 export * from './use-cases/deactivate-own-account.use-case';
 export * from './use-cases/toggle-two-factor.use-case';
+export * from './identity.facade';

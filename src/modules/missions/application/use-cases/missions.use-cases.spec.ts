@@ -162,7 +162,7 @@ describe('List / Get missions — scoped by audience', () => {
 
   it('the facade exposes a summary for deliverables', async () => {
     const { ctx, mine, other } = setup();
-    const facade = new MissionsFacade(ctx.missions);
+    const facade = new MissionsFacade(ctx.missions, ctx.committer);
     expect(await facade.findSummary(mine.id)).toEqual({
       id: mine.id,
       quoteId: mine.quoteId,

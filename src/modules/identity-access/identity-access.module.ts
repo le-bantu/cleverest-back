@@ -17,6 +17,7 @@ import { ListAllUsersUseCase } from './application/use-cases/list-all-users.use-
 import { UpdateOwnProfileUseCase } from './application/use-cases/update-own-profile.use-case';
 import { DeactivateOwnAccountUseCase } from './application/use-cases/deactivate-own-account.use-case';
 import { ToggleTwoFactorUseCase } from './application/use-cases/toggle-two-factor.use-case';
+import { IdentityFacade } from './application/identity.facade';
 import { AuthController } from './interface/http/auth.controller';
 import { MeController } from './interface/http/me.controller';
 import { UsersController } from './interface/http/users.controller';
@@ -43,7 +44,7 @@ const useCases = [
 
 @Module({
   controllers: [AuthController, MeController, UsersController],
-  providers: [...identityInfrastructureProviders, ...useCases],
-  exports: [...useCases],
+  providers: [...identityInfrastructureProviders, ...useCases, IdentityFacade],
+  exports: [...useCases, IdentityFacade],
 })
 export class IdentityAccessModule {}

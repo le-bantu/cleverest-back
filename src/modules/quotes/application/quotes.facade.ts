@@ -1,11 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { PendingWrite } from '@shared/application/pending-write';
 import {
   CONSULTANT_DIRECTORY,
   ConsultantDirectoryPort,
+  Money,
+  parseQuoteType,
+  Quote,
   QUOTE_REPOSITORY,
   QuoteActor,
   QuoteRepository,
   QuoteStatus,
+  RequestNumberGenerator,
 } from '../domain';
 import { QuoteCommitter } from './services/quote-committer';
 import { loadQuote } from './services/quote-loader';
@@ -46,7 +51,10 @@ export class QuotesFacade {
 
   async findSummary(quoteId: string): Promise<QuoteSummary | null> {
     const q = await this.quotes.findById(quoteId);
-    if (!q) return null;
+    return q ? this.toSummary(q) : null;
+  }
+
+  private toSummary(q: Quote): QuoteSummary {
     return {
       id: q.id,
       clientId: q.clientId,
@@ -73,6 +81,50 @@ export class QuotesFacade {
     const quote = await loadQuote(this.quotes, quoteId);
     quote.signByClient({ actorId: clientId, actor: QuoteActor.CLIENT }, now);
     return {
+      persist: (tx) => this.quotes.save(quote, tx),
+      finalize: () => this.committer.afterCommit([quote]),
+    };
+  }
+
+  /**
+   * A deal closed outside the platform (apporteur conversion): the quote is
+   * created, validated by the admin at `price` (VALIDÉ_ADMIN) and signed by
+   * the client (SIGNÉ_CLIENT) — through the regular state machine. Returns
+   * the summary as it stood when validated (what a contract is drawn from).
+   */
+  async prepareClosedDealQuote(
+    input: {
+      clientId: string;
+      title: string;
+      description: string;
+      type: string;
+      price: number;
+      adminId: string;
+    },
+    now: Date,
+  ): Promise<PendingWrite & { validated: QuoteSummary }> {
+    const quote = Quote.create(
+      {
+        id: this.quotes.nextIdentity(),
+        clientId: input.clientId,
+        requestNumber: RequestNumberGenerator.next(await this.quotes.lastRequestSequence()),
+        type: parseQuoteType(input.type),
+        title: input.title,
+        description: input.description,
+      },
+      input.adminId,
+      now,
+    );
+    const admin = { actorId: input.adminId, actor: QuoteActor.ADMIN };
+    quote.reviewByAdmin(
+      { status: QuoteStatus.VALIDE_ADMIN, price: Money.of(input.price) },
+      admin,
+      now,
+    );
+    const validated = this.toSummary(quote);
+    quote.signByClient({ actorId: input.clientId, actor: QuoteActor.CLIENT }, now);
+    return {
+      validated,
       persist: (tx) => this.quotes.save(quote, tx),
       finalize: () => this.committer.afterCommit([quote]),
     };

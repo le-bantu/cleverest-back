@@ -20,6 +20,8 @@ export const LIFECYCLE_TABLES = [
   'payments',
   'client_invoices',
   'consultant_invoices',
+  'prospects',
+  'commissions',
 ];
 
 /**
@@ -30,6 +32,8 @@ export class LifecycleWorld {
   actors!: SeededActors;
   consultant2!: SeededUser;
   client2!: SeededUser;
+  apporteur!: SeededUser;
+  apporteur2!: SeededUser;
   readonly auth: Record<string, string> = {};
 
   constructor(private readonly app: INestApplication) {}
@@ -51,13 +55,17 @@ export class LifecycleWorld {
       lastName: 'Fisc',
     });
     this.client2 = await createUser(db, 'client2@e2e.test', 'client');
-    for (const u of [this.consultant2, this.client2]) {
+    this.apporteur = await createUser(db, 'apporteur@e2e.test', 'apporteur');
+    this.apporteur2 = await createUser(db, 'apporteur2@e2e.test', 'apporteur');
+    for (const u of [this.consultant2, this.client2, this.apporteur, this.apporteur2]) {
       await db.user.update({ where: { id: u.id }, data: { passwordHash: hash } });
     }
     this.auth.client = await this.login(this.actors.client.email);
     this.auth.client2 = await this.login(this.client2.email);
     this.auth.consultant = await this.login(this.actors.consultant.email);
     this.auth.consultant2 = await this.login(this.consultant2.email);
+    this.auth.apporteur = await this.login(this.apporteur.email);
+    this.auth.apporteur2 = await this.login(this.apporteur2.email);
     this.auth.superadmin = await this.login(this.actors.superadmin.email);
     this.auth.admin = await this.login(this.actors.admin.email);
   }

@@ -21,7 +21,8 @@ export abstract class UserRepository {
   abstract findById(id: string): Promise<User | null>;
   abstract findByEmail(email: string): Promise<User | null>;
   abstract existsByEmail(email: string): Promise<boolean>;
-  abstract save(user: User): Promise<void>;
+  /** `tx` = opaque UnitOfWork context (writes inside the caller's transaction) */
+  abstract save(user: User, tx?: unknown): Promise<void>;
   abstract list(query: PageQuery, filter: UserListFilter): Promise<Page<User>>;
   abstract listAll(filter: UserListFilter): Promise<User[]>;
 }

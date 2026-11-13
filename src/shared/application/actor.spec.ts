@@ -7,11 +7,13 @@ const ctx = (roles: string[], permissions: string[] = []) => ({
 });
 
 describe('shared actor helpers', () => {
-  it('maps roles to an audience with admin > consultant > client priority', () => {
+  it('maps roles to an audience with admin > consultant > client > apporteur priority', () => {
     expect(actorKindOf(['superadmin'])).toBe('ADMIN');
     expect(actorKindOf(['consultant', 'client'])).toBe('CONSULTANT');
     expect(actorKindOf(['client'])).toBe('CLIENT');
-    expect(actorKindOf(['apporteur'])).toBeNull();
+    expect(actorKindOf(['apporteur'])).toBe('APPORTEUR');
+    expect(actorKindOf(['client', 'apporteur'])).toBe('CLIENT');
+    expect(actorKindOf(['visitor'])).toBeNull();
   });
 
   it('resolveActor refuses audiences that are not allowed', () => {
@@ -19,6 +21,8 @@ describe('shared actor helpers', () => {
     expect(() => resolveActor(ctx(['client']), ['ADMIN'])).toThrow(
       expect.objectContaining({ code: 'ROLE_NOT_ALLOWED', httpStatus: 403 }),
     );
+    // apporteurs are refused unless a use case lists them explicitly
+    expect(resolveActor(ctx(['apporteur']), ['APPORTEUR']).kind).toBe('APPORTEUR');
     expect(() => resolveActor(ctx(['apporteur']))).toThrow(
       expect.objectContaining({ code: 'ROLE_NOT_ALLOWED' }),
     );

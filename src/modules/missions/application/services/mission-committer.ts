@@ -27,6 +27,11 @@ export class MissionCommitter {
 
   async commit(mission: Mission, tx?: unknown): Promise<void> {
     await this.missions.save(mission, tx);
+    await this.afterCommit(mission);
+  }
+
+  /** Audit + events + notifications once the mission is durably saved (possibly by another context's UoW). */
+  async afterCommit(mission: Mission): Promise<void> {
     const events = mission.pullDomainEvents();
     for (const event of events) {
       if (event instanceof MissionCreated) {

@@ -35,35 +35,38 @@ export class PrismaUserRepository extends UserRepository {
     return count > 0;
   }
 
-  async save(user: User): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      await tx.user.upsert({
-        where: { id: user.id },
-        create: {
-          id: user.id,
-          email: user.emailValue,
-          phone: user.phone,
-          passwordHash: user.passwordHash,
-          isActive: user.isActive,
-          twoFactorEnabled: user.twoFactorEnabled,
-          emailVerifiedAt: user.emailVerifiedAt,
-          deletedAt: user.deletedAt,
-        },
-        update: {
-          email: user.emailValue,
-          phone: user.phone,
-          passwordHash: user.passwordHash,
-          isActive: user.isActive,
-          twoFactorEnabled: user.twoFactorEnabled,
-          emailVerifiedAt: user.emailVerifiedAt,
-          deletedAt: user.deletedAt,
-        },
-      });
+  async save(user: User, outerTx?: unknown): Promise<void> {
+    if (outerTx) return this.write(outerTx as Tx, user);
+    await this.prisma.$transaction((tx) => this.write(tx, user));
+  }
 
-      await this.syncRoles(tx, user);
-      await this.syncPermissions(tx, user);
-      await this.syncProfile(tx, user);
+  private async write(tx: Tx, user: User): Promise<void> {
+    await tx.user.upsert({
+      where: { id: user.id },
+      create: {
+        id: user.id,
+        email: user.emailValue,
+        phone: user.phone,
+        passwordHash: user.passwordHash,
+        isActive: user.isActive,
+        twoFactorEnabled: user.twoFactorEnabled,
+        emailVerifiedAt: user.emailVerifiedAt,
+        deletedAt: user.deletedAt,
+      },
+      update: {
+        email: user.emailValue,
+        phone: user.phone,
+        passwordHash: user.passwordHash,
+        isActive: user.isActive,
+        twoFactorEnabled: user.twoFactorEnabled,
+        emailVerifiedAt: user.emailVerifiedAt,
+        deletedAt: user.deletedAt,
+      },
     });
+
+    await this.syncRoles(tx, user);
+    await this.syncPermissions(tx, user);
+    await this.syncProfile(tx, user);
   }
 
   private async syncRoles(tx: Tx, user: User): Promise<void> {

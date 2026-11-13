@@ -269,7 +269,7 @@ describe('List / Get / Download / Delete consultant contracts', () => {
 
   it('the facade tells whether a consultant is engaged on a main quote', async () => {
     const { ctx } = setup();
-    const facade = new ContractsFacade(ctx.contracts, ctx.consultantContracts);
+    const facade = new ContractsFacade(ctx.contracts, ctx.consultantContracts, ctx.committer);
     expect(await facade.hasSignedConsultantContract('c1', 'main-1')).toBe(true);
     expect(await facade.hasSignedConsultantContract('c2', 'main-1')).toBe(false); // unsigned
     expect(await facade.hasSignedConsultantContract('c1', 'other-main')).toBe(false);

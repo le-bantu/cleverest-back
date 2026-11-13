@@ -23,7 +23,7 @@ export const DELIVERABLE_FILE_POLICY: FilePolicy = { maxBytes: MAX_UPLOAD_BYTES,
 /** Who looks at a deliverable (structurally the shared `ActorRef`). */
 export interface DeliverableViewer {
   userId: string;
-  kind: 'ADMIN' | 'CONSULTANT' | 'CLIENT';
+  kind: 'ADMIN' | 'CONSULTANT' | 'CLIENT' | 'APPORTEUR';
 }
 
 export interface DeliverableProps {

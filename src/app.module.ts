@@ -8,6 +8,7 @@ import { MissionsModule } from '@modules/missions/missions.module';
 import { DeliverablesModule } from '@modules/deliverables/deliverables.module';
 import { PaymentsModule } from '@modules/payments/payments.module';
 import { ConsultantInvoicesModule } from '@modules/consultant-invoices/consultant-invoices.module';
+import { ApporteursModule } from '@modules/apporteurs/apporteurs.module';
 import { ReportingModule } from '@modules/reporting/reporting.module';
 
 @Module({
@@ -20,6 +21,7 @@ import { ReportingModule } from '@modules/reporting/reporting.module';
     DeliverablesModule,
     PaymentsModule,
     ConsultantInvoicesModule,
+    ApporteursModule,
     ReportingModule,
   ],
   controllers: [HealthController],

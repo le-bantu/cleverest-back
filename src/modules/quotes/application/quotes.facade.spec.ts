@@ -73,4 +73,39 @@ describe('QuotesFacade', () => {
     expect(await facade.existingConsultants(['c2', 'ghost'])).toEqual(['c2']);
     expect(await facade.existingConsultants([])).toEqual([]);
   });
+
+  it('prepares a closed-deal quote: validated at the price then signed, written on persist', async () => {
+    const { ctx, facade } = setup();
+    const prepared = await facade.prepareClosedDealQuote(
+      {
+        clientId: 'client-9',
+        title: 'Audit',
+        description: 'Affaire apportée',
+        type: 'CONSULTATION',
+        price: 5000,
+        adminId: 'admin-1',
+      },
+      NOW,
+    );
+    expect(prepared.validated).toMatchObject({
+      clientId: 'client-9',
+      status: S.VALIDE_ADMIN,
+      price: 5000,
+      isSubquote: false,
+    });
+    expect(ctx.quotes.store.size).toBe(0);
+    await prepared.persist({ tx: true });
+    const saved = ctx.quotes.store.get(prepared.validated.id)!;
+    expect(saved.status).toBe(S.SIGNE_CLIENT);
+    await prepared.finalize();
+    expect(ctx.audit.entries.map((e) => e.toStatus)).toEqual(
+      expect.arrayContaining([S.VALIDE_ADMIN, S.SIGNE_CLIENT]),
+    );
+    await expect(
+      facade.prepareClosedDealQuote(
+        { clientId: 'c', title: 't', description: 'd', type: 'NOPE', price: 1, adminId: 'a' },
+        NOW,
+      ),
+    ).rejects.toMatchObject({ httpStatus: 422 });
+  });
 });

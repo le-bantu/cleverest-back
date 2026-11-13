@@ -28,7 +28,7 @@ export const CONSULTANT_INVOICE_FILE_POLICY: FilePolicy = {
 /** Who looks at an invoice (structurally the shared `ActorRef`). */
 export interface InvoiceViewer {
   userId: string;
-  kind: 'ADMIN' | 'CONSULTANT' | 'CLIENT';
+  kind: 'ADMIN' | 'CONSULTANT' | 'CLIENT' | 'APPORTEUR';
 }
 
 /** The consultant's engagement on the mission's main quote. */

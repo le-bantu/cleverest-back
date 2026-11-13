@@ -62,6 +62,8 @@ const config: Config = {
     'src/modules/payments/application/': { lines: 90, statements: 90 },
     'src/modules/consultant-invoices/domain/': { lines: 90, statements: 90 },
     'src/modules/consultant-invoices/application/': { lines: 90, statements: 90 },
+    'src/modules/apporteurs/domain/': { lines: 90, statements: 90 },
+    'src/modules/apporteurs/application/': { lines: 90, statements: 90 },
     'src/shared/kernel/': { lines: 90, statements: 90 },
   },
 };

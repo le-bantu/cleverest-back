@@ -2,18 +2,19 @@ import { ForbiddenException } from '@shared/kernel';
 import { ActorContext } from './use-case';
 
 /** Coarse audience of an authenticated user, as business rules see it. */
-export type ActorKind = 'ADMIN' | 'CONSULTANT' | 'CLIENT';
+export type ActorKind = 'ADMIN' | 'CONSULTANT' | 'CLIENT' | 'APPORTEUR';
 
 export interface ActorRef {
   userId: string;
   kind: ActorKind;
 }
 
-/** admin/superadmin → ADMIN, then consultant, then client (same priority as quotes). */
+/** admin/superadmin → ADMIN, then consultant, then client (same priority as quotes), then apporteur. */
 export const actorKindOf = (roles: readonly string[]): ActorKind | null => {
   if (roles.includes('admin') || roles.includes('superadmin')) return 'ADMIN';
   if (roles.includes('consultant')) return 'CONSULTANT';
   if (roles.includes('client')) return 'CLIENT';
+  if (roles.includes('apporteur')) return 'APPORTEUR';
   return null;
 };
 
