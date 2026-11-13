@@ -167,12 +167,15 @@ describe('List / Get missions — scoped by audience', () => {
       id: mine.id,
       quoteId: mine.quoteId,
       clientId: 'client-1',
+      title: mine.title,
       consultantIds: ['c1', 'c2'],
       status: S.EN_COURS,
       active: true,
     });
     expect((await facade.findSummary(other.id))?.active).toBe(false);
     expect(await facade.findSummary('x')).toBeNull();
+    expect(await facade.missionIdsForConsultant('c2')).toContain(mine.id);
+    expect(await facade.missionIdsForConsultant('nobody')).toEqual([]);
   });
 });
 

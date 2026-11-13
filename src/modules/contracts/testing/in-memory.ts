@@ -109,6 +109,14 @@ export class InMemoryConsultantContractRepository extends ConsultantContractRepo
       ),
     );
   }
+  signedAmount(consultantId: string, rootQuoteId: string): Promise<number | null> {
+    const signed = [...this.store.values()].filter(
+      (c) => c.consultantId === consultantId && c.rootQuoteId === rootQuoteId && c.signed,
+    );
+    return Promise.resolve(
+      signed.length ? Math.round(signed.reduce((t, c) => t + c.amount, 0) * 100) / 100 : null,
+    );
+  }
   save(contract: ConsultantContract): Promise<void> {
     if (this.failNextSave) {
       this.failNextSave = false;

@@ -93,6 +93,7 @@ describe('PrismaMissionRepository (integration)', () => {
     m.updateTask(c2.id, ids[1], { status: MissionTaskStatus.FAITE }, NOW);
     m.updateProgress(c1.id, { status: MissionStatus.EN_VALIDATION }, NOW);
     await repo.save(m);
+    expect(await repo.idsForConsultant(c2.id)).toEqual([m.id]);
 
     const raw = await getTestPrisma().$queryRaw<Array<{ status: string }>>`
       SELECT status::text AS status FROM missions`;

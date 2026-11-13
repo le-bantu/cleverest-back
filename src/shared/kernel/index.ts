@@ -8,3 +8,4 @@ export * from './identifier';
 export * from './paginated';
 export * from './clock';
 export * from './stored-file';
+export * from './amount';

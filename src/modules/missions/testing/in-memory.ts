@@ -35,6 +35,11 @@ export class InMemoryMissionRepository extends MissionRepository {
   findById(id: string): Promise<Mission | null> {
     return Promise.resolve(this.store.get(id) ?? null);
   }
+  idsForConsultant(consultantId: string): Promise<string[]> {
+    return Promise.resolve(
+      [...this.store.values()].filter((m) => m.isAssigned(consultantId)).map((m) => m.id),
+    );
+  }
   save(mission: Mission): Promise<void> {
     if (this.failNextSave) {
       this.failNextSave = false;

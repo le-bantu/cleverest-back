@@ -18,6 +18,8 @@ export abstract class ConsultantContractRepository {
   abstract existsFor(quoteId: string, consultantId: string): Promise<boolean>;
   /** a SIGNED contract of this consultant on the main quote or one of its subquotes */
   abstract hasSigned(consultantId: string, rootQuoteId: string): Promise<boolean>;
+  /** sum of the SIGNED contract amounts of this consultant on the main quote; null when none */
+  abstract signedAmount(consultantId: string, rootQuoteId: string): Promise<number | null>;
   abstract save(contract: ConsultantContract): Promise<void>;
   abstract delete(id: string): Promise<void>;
   abstract list(

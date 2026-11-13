@@ -127,10 +127,12 @@ describe('PrismaConsultantContractRepository (integration)', () => {
     expect(await repo.existsFor(sub1.id, c1.id)).toBe(true);
     expect(await repo.existsFor(sub2.id, c1.id)).toBe(false);
     expect(await repo.hasSigned(c1.id, main.id)).toBe(false);
+    expect(await repo.signedAmount(c1.id, main.id)).toBeNull();
     c.sign(c1.id, pdf('s.pdf'), LATER);
     await repo.save(c);
     expect(await repo.hasSigned(c1.id, main.id)).toBe(true);
     expect(await repo.hasSigned(c2.id, main.id)).toBe(false);
+    expect(await repo.signedAmount(c1.id, main.id)).toBe(1234.56);
   });
 
   it('one contract per (quote, consultant): duplicate → CONSULTANT_CONTRACT_ALREADY_EXISTS', async () => {

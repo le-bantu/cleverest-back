@@ -54,6 +54,10 @@ model User {
   deliverablesAuthored Deliverable[] @relation("DeliverableConsultant")
   deliverablesReceived Deliverable[] @relation("DeliverableClient")
 
+  payments           Payment[]           @relation("PaymentClient")
+  clientInvoices     ClientInvoice[]     @relation("ClientInvoiceClient")
+  consultantInvoices ConsultantInvoice[] @relation("ConsultantInvoiceConsultant")
+
   @@index([isActive])
   @@map("users")
 }
@@ -447,6 +451,10 @@ model Mission {
   tasks        MissionTask[]
   deliverables Deliverable[]
 
+  payments           Payment[]
+  clientInvoices     ClientInvoice[]
+  consultantInvoices ConsultantInvoice[]
+
   @@index([contractId])
   @@index([clientId])
   @@index([status])
@@ -549,4 +557,91 @@ model Notification {
 
   @@index([userId, readAt])
   @@map("notifications")
+}
+
+// ---------------------------------------------------------------------------
+// payments (+ client invoices) & consultant invoices
+// ---------------------------------------------------------------------------
+
+/// Payment DECLARED by the client (transfer proof). Validated once by an admin.
+model Payment {
+  id            String    @id @default(uuid()) @db.Uuid
+  missionId     String    @db.Uuid
+  mission       Mission   @relation(fields: [missionId], references: [id], onDelete: Restrict)
+  /// owner of the mission, captured at submission
+  clientId      String    @db.Uuid
+  client        User      @relation("PaymentClient", fields: [clientId], references: [id], onDelete: Restrict)
+  amount        Decimal   @db.Decimal(14, 2)
+  currency      String    @default("EUR")
+  proofFileKey  String
+  proofFileName String
+  proofMimeType String?
+  proofSize     Int
+  validatedAt   DateTime?
+  validatedById String?   @db.Uuid
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  invoice ClientInvoice?
+
+  @@index([missionId])
+  @@index([clientId])
+  @@index([validatedAt])
+  @@index([createdAt])
+  @@map("payments")
+}
+
+/// Invoice issued by Cleverest to the client for a validated payment (generated PDF).
+model ClientInvoice {
+  id            String    @id @default(uuid()) @db.Uuid
+  paymentId     String    @unique @db.Uuid
+  payment       Payment   @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  missionId     String    @db.Uuid
+  mission       Mission   @relation(fields: [missionId], references: [id], onDelete: Restrict)
+  clientId      String    @db.Uuid
+  client        User      @relation("ClientInvoiceClient", fields: [clientId], references: [id], onDelete: Restrict)
+  /// FAC-<year>-<seq>, sequential per year
+  invoiceNumber String    @unique
+  amount        Decimal   @db.Decimal(14, 2)
+  currency      String    @default("EUR")
+  pdfFileKey    String
+  pdfFileName   String
+  pdfSize       Int
+  generatedAt   DateTime
+  generatedById String?   @db.Uuid
+  sentAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([clientId])
+  @@index([missionId])
+  @@map("client_invoices")
+}
+
+/// Invoice a consultant sends to Cleverest for a mission, capped by their signed consultant contract(s).
+model ConsultantInvoice {
+  id           String    @id @default(uuid()) @db.Uuid
+  consultantId String    @db.Uuid
+  consultant   User      @relation("ConsultantInvoiceConsultant", fields: [consultantId], references: [id], onDelete: Restrict)
+  missionId    String    @db.Uuid
+  mission      Mission   @relation(fields: [missionId], references: [id], onDelete: Restrict)
+  /// main quote of the mission (the engagement cap is per consultant and main quote)
+  quoteId      String    @db.Uuid
+  amount       Decimal   @db.Decimal(14, 2)
+  currency     String    @default("EUR")
+  fileKey      String
+  fileName     String
+  mimeType     String?
+  size         Int
+  uploadedAt   DateTime
+  paidAt       DateTime?
+  paidById     String?   @db.Uuid
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([consultantId, quoteId])
+  @@index([missionId])
+  @@index([paidAt])
+  @@index([uploadedAt])
+  @@map("consultant_invoices")
 }

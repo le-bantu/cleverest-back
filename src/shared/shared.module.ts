@@ -13,6 +13,7 @@ import { NotifierModule } from './infrastructure/notifications/notifier.module';
 import { OtpModule } from './infrastructure/otp/otp.module';
 import { AuditModule } from './infrastructure/audit/audit.module';
 import { EventBusModule } from './infrastructure/events/event-bus.module';
+import { PdfModule } from './infrastructure/pdf/pdf.module';
 
 import { JwtAuthGuard } from './interface/http/guards/jwt-auth.guard';
 import { RolesGuard } from './interface/http/guards/roles.guard';
@@ -30,6 +31,7 @@ import { AllExceptionsFilter } from './interface/http/filters/all-exceptions.fil
     OtpModule,
     AuditModule,
     EventBusModule,
+    PdfModule,
     JwtModule.registerAsync({
       global: true,
       inject: [ConfigService],
@@ -56,6 +58,7 @@ import { AllExceptionsFilter } from './interface/http/filters/all-exceptions.fil
     OtpModule,
     AuditModule,
     EventBusModule,
+    PdfModule,
     JwtModule,
     CLOCK,
     Clock,

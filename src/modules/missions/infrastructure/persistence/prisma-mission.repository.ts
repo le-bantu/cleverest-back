@@ -81,6 +81,14 @@ export class PrismaMissionRepository extends MissionRepository {
     }
   }
 
+  async idsForConsultant(consultantId: string): Promise<string[]> {
+    const rows = await this.prisma.missionConsultant.findMany({
+      where: { consultantId },
+      select: { missionId: true },
+    });
+    return rows.map((r) => r.missionId);
+  }
+
   async list(query: PageQuery, f: MissionListFilter): Promise<Page<Mission>> {
     const { page, perPage, sort } = normalizePageQuery(query);
     const where: Prisma.MissionWhereInput = {};

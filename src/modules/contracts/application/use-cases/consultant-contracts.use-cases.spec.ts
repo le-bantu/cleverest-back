@@ -273,5 +273,7 @@ describe('List / Get / Download / Delete consultant contracts', () => {
     expect(await facade.hasSignedConsultantContract('c1', 'main-1')).toBe(true);
     expect(await facade.hasSignedConsultantContract('c2', 'main-1')).toBe(false); // unsigned
     expect(await facade.hasSignedConsultantContract('c1', 'other-main')).toBe(false);
+    expect(await facade.signedConsultantAmount('c1', 'main-1')).toBe(1200);
+    expect(await facade.signedConsultantAmount('c2', 'main-1')).toBeNull();
   });
 });

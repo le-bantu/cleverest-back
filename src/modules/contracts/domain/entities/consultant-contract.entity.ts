@@ -1,4 +1,9 @@
-import { AbstractAggregateRoot, assertFileAllowed, StoredFileRef } from '@shared/kernel';
+import {
+  AbstractAggregateRoot,
+  assertFileAllowed,
+  positiveAmount,
+  StoredFileRef,
+} from '@shared/kernel';
 import {
   ConsultantContractAlreadyExists,
   consultantContractAlreadySigned,
@@ -27,15 +32,6 @@ export interface ConsultantContractProps {
   createdAt: Date;
   updatedAt: Date;
 }
-
-const MAX_AMOUNT = 999_999_999_999.99;
-
-const checkAmount = (amount: number): number => {
-  if (!Number.isFinite(amount) || amount <= 0 || amount > MAX_AMOUNT) {
-    throw invalidConsultantContractAmount('INVALID_AMOUNT', 'The amount must be a positive number');
-  }
-  return Math.round(amount * 100) / 100;
-};
 
 /**
  * Engagement between Cleverest and ONE consultant, backed by the quote the
@@ -89,7 +85,7 @@ export class ConsultantContract extends AbstractAggregateRoot<string> {
       quoteId: quote.id,
       rootQuoteId: quote.parentQuoteId ?? quote.id,
       consultantId,
-      amount: checkAmount(amount),
+      amount: positiveAmount(amount),
       createdById: input.createdById,
       originalFile: input.originalFile,
       signedFile: null,

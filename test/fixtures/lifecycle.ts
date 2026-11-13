@@ -17,6 +17,9 @@ export const LIFECYCLE_TABLES = [
   'consultant_contracts',
   'missions',
   'deliverables',
+  'payments',
+  'client_invoices',
+  'consultant_invoices',
 ];
 
 /**
@@ -190,5 +193,17 @@ export class LifecycleWorld {
       .send({ action: 'accept' })
       .expect(200);
     return mission;
+  }
+
+  /** Client declares a payment on the mission (multipart proof). */
+  async payment(missionId: string, amount = 1500): Promise<{ id: string }> {
+    const res = await this.api()
+      .post('/api/payments')
+      .set('Authorization', this.auth.client)
+      .field('missionId', missionId)
+      .field('amount', String(amount))
+      .attach('file', PDF('virement'), 'virement.pdf')
+      .expect(201);
+    return { id: res.body.id as string };
   }
 }

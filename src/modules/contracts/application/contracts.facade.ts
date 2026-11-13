@@ -25,4 +25,9 @@ export class ContractsFacade {
   hasSignedConsultantContract(consultantId: string, mainQuoteId: string): Promise<boolean> {
     return this.consultantContracts.hasSigned(consultantId, mainQuoteId);
   }
+
+  /** What Cleverest committed to pay the consultant on this main quote (signed contracts); null if none. */
+  signedConsultantAmount(consultantId: string, mainQuoteId: string): Promise<number | null> {
+    return this.consultantContracts.signedAmount(consultantId, mainQuoteId);
+  }
 }

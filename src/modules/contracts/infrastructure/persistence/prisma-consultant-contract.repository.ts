@@ -83,6 +83,15 @@ export class PrismaConsultantContractRepository extends ConsultantContractReposi
     return count > 0;
   }
 
+  async signedAmount(consultantId: string, rootQuoteId: string): Promise<number | null> {
+    const agg = await this.prisma.consultantContract.aggregate({
+      where: { consultantId, rootQuoteId, signedAt: { not: null } },
+      _sum: { amount: true },
+      _count: true,
+    });
+    return agg._count > 0 ? (agg._sum.amount?.toNumber() ?? 0) : null;
+  }
+
   async save(contract: ConsultantContract): Promise<void> {
     const data = toPersistence(contract);
     try {

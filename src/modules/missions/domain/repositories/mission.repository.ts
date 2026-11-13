@@ -22,4 +22,6 @@ export abstract class MissionRepository {
   abstract findById(id: string): Promise<Mission | null>;
   abstract save(mission: Mission, tx?: unknown): Promise<void>;
   abstract list(query: PageQuery, filter: MissionListFilter): Promise<Page<Mission>>;
+  /** ids of the missions the consultant is currently assigned to */
+  abstract idsForConsultant(consultantId: string): Promise<string[]>;
 }

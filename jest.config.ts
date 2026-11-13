@@ -58,6 +58,10 @@ const config: Config = {
     'src/modules/missions/application/': { lines: 90, statements: 90 },
     'src/modules/deliverables/domain/': { lines: 90, statements: 90 },
     'src/modules/deliverables/application/': { lines: 90, statements: 90 },
+    'src/modules/payments/domain/': { lines: 90, statements: 90 },
+    'src/modules/payments/application/': { lines: 90, statements: 90 },
+    'src/modules/consultant-invoices/domain/': { lines: 90, statements: 90 },
+    'src/modules/consultant-invoices/application/': { lines: 90, statements: 90 },
     'src/shared/kernel/': { lines: 90, statements: 90 },
   },
 };

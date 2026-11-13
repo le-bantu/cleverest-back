@@ -68,6 +68,7 @@ export interface MissionSummary {
   /** main quote the mission executes */
   quoteId: string;
   clientId: string;
+  title: string;
   consultantIds: string[];
   status: string;
   /** EN_COURS or EN_VALIDATION */
