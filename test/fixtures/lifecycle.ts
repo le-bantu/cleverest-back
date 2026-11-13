@@ -22,6 +22,7 @@ export const LIFECYCLE_TABLES = [
   'consultant_invoices',
   'prospects',
   'commissions',
+  'mission_reviews',
 ];
 
 /**
@@ -199,6 +200,17 @@ export class LifecycleWorld {
       .post(`/api/missions/${mission.id}/respond`)
       .set('Authorization', this.auth.consultant)
       .send({ action: 'accept' })
+      .expect(200);
+    return mission;
+  }
+
+  /** An active mission closed by its team (status TERMINÉE). */
+  async completedMission(): Promise<{ id: string; contractId: string; quoteId: string }> {
+    const mission = await this.activeMission();
+    await this.api()
+      .patch(`/api/missions/${mission.id}/progress`)
+      .set('Authorization', this.auth.consultant)
+      .send({ status: 'TERMINÉE' })
       .expect(200);
     return mission;
   }
