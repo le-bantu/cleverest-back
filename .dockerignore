@@ -1,0 +1,15 @@
+node_modules
+dist
+coverage
+storage
+test
+scripts
+.git
+.github
+.husky
+.idea
+.env
+.env.*
+!.env.example
+openapi.json
+*.log

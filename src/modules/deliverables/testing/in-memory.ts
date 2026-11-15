@@ -1,6 +1,6 @@
 import { FixedClock, generateUuid, normalizePageQuery, Page, PageQuery } from '@shared/kernel';
 import { BestEffortNotifier } from '@shared/application/services/best-effort-notifier';
-import { FakeEventBus, FakeFileStorage, FakeNotifier } from '@shared/testing/fakes';
+import { FakeEventBus, FakeFileStorage, FakeNotifier, FakeAuditLog } from '@shared/testing/fakes';
 import {
   Deliverable,
   DeliverableListFilter,
@@ -89,8 +89,14 @@ export const deliverablesTestContext = () => {
   const notifier = new FakeNotifier();
   const storage = new FakeFileStorage();
   const clock = new FixedClock(NOW);
-  const committer = new DeliverableCommitter(deliverables, bus, new BestEffortNotifier(notifier));
-  return { deliverables, missions, engagement, bus, notifier, storage, clock, committer };
+  const audit = new FakeAuditLog();
+  const committer = new DeliverableCommitter(
+    deliverables,
+    bus,
+    new BestEffortNotifier(notifier),
+    audit,
+  );
+  return { deliverables, missions, engagement, bus, notifier, storage, clock, committer, audit };
 };
 
 export const aDeliverable = (overrides: Partial<DeliverableProps> = {}): Deliverable => {

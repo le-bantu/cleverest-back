@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { AUDIT_LOG, AuditLogPort } from '@shared/application/ports/audit-log.port';
 import { EVENT_BUS, EventBusPort } from '@shared/application/ports/event-bus.port';
 import { BestEffortNotifier } from '@shared/application/services/best-effort-notifier';
 import { ActorKind, ActorRef, resolveActor } from '@shared/application/actor';
@@ -8,6 +9,7 @@ import {
   DELIVERABLE_REPOSITORY,
   deliverableNotFound,
   DeliverableRepository,
+  DeliverableUploaded,
   DeliverableValidatedByAdmin,
   DeliverableValidatedByClient,
 } from '../domain';
@@ -40,21 +42,35 @@ export const deliverableViewFor = (
 ): DeliverableView | ClientDeliverableView =>
   by.kind === 'CLIENT' ? toClientDeliverableView(d) : toDeliverableView(d);
 
-/** Saves, publishes events and notifies (best effort). */
+/** Saves, audits, publishes events and notifies (best effort). */
 @Injectable()
 export class DeliverableCommitter {
   constructor(
     @Inject(DELIVERABLE_REPOSITORY) private readonly deliverables: DeliverableRepository,
     @Inject(EVENT_BUS) private readonly events: EventBusPort,
     private readonly notifier: BestEffortNotifier,
+    @Inject(AUDIT_LOG) private readonly audit: AuditLogPort,
   ) {}
+
+  private record(deliverable: Deliverable, action: string, actorId: string): Promise<void> {
+    return this.audit.record({
+      entity: 'Deliverable',
+      entityId: deliverable.id,
+      action,
+      actorId,
+      metadata: { missionId: deliverable.missionId },
+    });
+  }
 
   async commit(deliverable: Deliverable): Promise<void> {
     await this.deliverables.save(deliverable);
     const events = deliverable.pullDomainEvents();
     for (const event of events) {
       const data = { deliverableId: deliverable.id, missionId: deliverable.missionId };
-      if (event instanceof DeliverableValidatedByAdmin) {
+      if (event instanceof DeliverableUploaded) {
+        await this.record(deliverable, 'UPLOADED', event.data.actorId);
+      } else if (event instanceof DeliverableValidatedByAdmin) {
+        await this.record(deliverable, 'VALIDATED_BY_ADMIN', event.data.actorId);
         await this.notifier.notify([deliverable.clientId], {
           type: DELIVERABLE_NOTIFICATION_TYPE,
           title: 'Nouveau livrable disponible',
@@ -62,6 +78,7 @@ export class DeliverableCommitter {
           data,
         });
       } else if (event instanceof DeliverableValidatedByClient) {
+        await this.record(deliverable, 'VALIDATED_BY_CLIENT', event.data.actorId);
         await this.notifier.notify([deliverable.consultantId], {
           type: DELIVERABLE_NOTIFICATION_TYPE,
           title: 'Livrable validé par le client',

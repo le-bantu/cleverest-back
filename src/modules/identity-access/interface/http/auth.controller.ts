@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Headers, HttpCode, Post, Res } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
+import { AuthRateLimit } from '@shared/interface/http/decorators/auth-rate-limit.decorator';
 import { Public } from '@shared/interface/http/decorators/public.decorator';
 import {
   CurrentUser,
@@ -39,6 +40,7 @@ export class AuthController {
   ) {}
 
   @Public()
+  @AuthRateLimit()
   @Post('login')
   @HttpCode(200)
   @ApiOkResponse({ type: TokenPairResponse })
@@ -56,6 +58,7 @@ export class AuthController {
   }
 
   @Public()
+  @AuthRateLimit()
   @Post('otp/verify')
   @HttpCode(200)
   @ApiOkResponse({ type: TokenPairResponse })
@@ -64,6 +67,7 @@ export class AuthController {
   }
 
   @Public()
+  @AuthRateLimit()
   @Post('otp/resend')
   @HttpCode(200)
   resendOtp(@Body() body: ResendOtpRequest) {
@@ -71,6 +75,7 @@ export class AuthController {
   }
 
   @Public()
+  @AuthRateLimit()
   @Post('refresh')
   @HttpCode(200)
   @ApiOkResponse({ type: TokenPairResponse })
@@ -78,6 +83,7 @@ export class AuthController {
     return this.refreshUc.execute({ ...body, userAgent });
   }
 
+  @ApiBearerAuth()
   @Post('logout')
   @HttpCode(204)
   async logout(@CurrentUser() user: AuthenticatedUser, @Body() body: LogoutRequest) {
@@ -87,6 +93,7 @@ export class AuthController {
     });
   }
 
+  @ApiBearerAuth()
   @Get('me')
   @ApiOkResponse({ type: UserResponse })
   me(@CurrentUser() user: AuthenticatedUser) {
@@ -94,6 +101,7 @@ export class AuthController {
   }
 
   @Public()
+  @AuthRateLimit()
   @Post('register')
   @HttpCode(201)
   register(@Body() body: RegisterRequest) {

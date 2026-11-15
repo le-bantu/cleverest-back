@@ -43,6 +43,9 @@ describe('UploadDeliverableUseCase', () => {
     });
     expect(ctx.storage.files.has(`deliverables/${mission.id}/${view.id}.pdf`)).toBe(true);
     expect(ctx.bus.names()).toEqual(['deliverables.uploaded']);
+    expect(ctx.audit.entries).toEqual([
+      expect.objectContaining({ entity: 'Deliverable', action: 'UPLOADED', actorId: 'c2' }),
+    ]);
     expect(ctx.notifier.sent).toEqual([]); // the client is not told before admin validation
     expect(ctx.engagement.calls).toEqual([{ consultantId: 'c2', quoteId: 'quote-1' }]);
   });
@@ -178,6 +181,7 @@ describe('validations', () => {
     expect(view).toMatchObject({ adminValidated: true, adminValidatedAt: NOW });
     expect(ctx.notifier.recipients()).toEqual(['client-1']);
     expect(ctx.bus.names()).toEqual(['deliverables.validated-by-admin']);
+    expect(ctx.audit.entries.map((e) => e.action)).toEqual(['VALIDATED_BY_ADMIN']);
     await expect(uc.execute({ actor: validator(), deliverableId: 'x' })).rejects.toMatchObject({
       code: 'DELIVERABLE_NOT_FOUND',
     });
@@ -193,6 +197,7 @@ describe('validations', () => {
     d.pullDomainEvents();
     const view = await uc.execute({ actor: actors.client(), deliverableId: d.id });
     expect(view).toMatchObject({ clientValidated: true, validatedAt: NOW });
+    expect(ctx.audit.entries.map((e) => e.action)).toContain('VALIDATED_BY_CLIENT');
     expect(ctx.notifier.recipients()).toEqual(['c1']);
     await expect(
       uc.execute({ actor: actors.consultant('c1'), deliverableId: d.id }),

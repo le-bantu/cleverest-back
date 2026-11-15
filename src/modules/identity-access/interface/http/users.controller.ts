@@ -10,7 +10,7 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { Roles } from '@shared/interface/http/decorators/roles.decorator';
 import { RequirePermissions } from '@shared/interface/http/decorators/require-permissions.decorator';
 import {
@@ -41,6 +41,7 @@ const actorOf = (user: AuthenticatedUser): ActorInfo => ({
 });
 
 @ApiTags('users')
+@ApiBearerAuth()
 @Controller('users')
 export class UsersController {
   constructor(

@@ -30,3 +30,6 @@ npm-debug.log*
 
 # Prisma
 prisma/*.db
+
+# generated API contract (CI artifact)
+/openapi.json

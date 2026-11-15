@@ -14,6 +14,8 @@ import { OtpModule } from './infrastructure/otp/otp.module';
 import { AuditModule } from './infrastructure/audit/audit.module';
 import { EventBusModule } from './infrastructure/events/event-bus.module';
 import { PdfModule } from './infrastructure/pdf/pdf.module';
+import { RateLimitModule } from './infrastructure/security/rate-limit.module';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 import { JwtAuthGuard } from './interface/http/guards/jwt-auth.guard';
 import { RolesGuard } from './interface/http/guards/roles.guard';
@@ -32,6 +34,7 @@ import { AllExceptionsFilter } from './interface/http/filters/all-exceptions.fil
     AuditModule,
     EventBusModule,
     PdfModule,
+    RateLimitModule,
     JwtModule.registerAsync({
       global: true,
       inject: [ConfigService],
@@ -44,6 +47,8 @@ import { AllExceptionsFilter } from './interface/http/filters/all-exceptions.fil
     SystemClock,
     { provide: CLOCK, useExisting: SystemClock },
     { provide: Clock, useExisting: SystemClock },
+    // first: refuse floods before any token or DB work
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },

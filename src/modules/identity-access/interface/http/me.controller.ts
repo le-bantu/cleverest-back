@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, Patch, Put } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import {
   AuthenticatedUser,
   CurrentUser,
@@ -14,6 +14,7 @@ import { ToggleTwoFactorRequest, UpdateMeRequest } from './dto/me.request';
 import { UserResponse } from './dto/responses';
 
 @ApiTags('me')
+@ApiBearerAuth()
 @Controller('me')
 export class MeController {
   constructor(
