@@ -94,7 +94,7 @@ describe('users + RBAC (e2e)', () => {
       .get('/api/admin/dashboard/summary')
       .set('Authorization', `Bearer ${await token(app, actors.superadmin.email)}`)
       .expect(200)
-      .expect((r) => expect(r.body).toMatchObject({ placeholder: true }));
+      .expect((r) => expect(r.body).toHaveProperty('generatedAt'));
   });
 
   it('a user can update their own profile via PUT /me but not someone else via PUT /users/:id', async () => {

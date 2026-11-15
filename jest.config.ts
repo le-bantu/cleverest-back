@@ -66,6 +66,7 @@ const config: Config = {
     'src/modules/apporteurs/application/': { lines: 90, statements: 90 },
     'src/modules/reviews/domain/': { lines: 90, statements: 90 },
     'src/modules/reviews/application/': { lines: 90, statements: 90 },
+    'src/modules/reporting/application/': { lines: 90, statements: 90 },
     'src/shared/kernel/': { lines: 90, statements: 90 },
   },
 };
